@@ -53,23 +53,34 @@ const stepLabels = {
 };
 
 function updateProgress(step) {
-  // Drive sidebar rail — maps step numbers to rail item IDs
   const railMap = { 1: 'srail1', 2: 'srail2', 3: 'srail3', 3.5: 'srail35', 4: 'srail4', 4.25: 'srail4', 5: 'srail5' };
   const stepOrder = [1, 2, 3, 3.5, 4, 5];
-  const currentIdx = stepOrder.indexOf(step) !== -1 ? stepOrder.indexOf(step) : stepOrder.findIndex(s => s >= step);
+
+  // step 0 = all todo; otherwise find current position
+  let currentIdx = -1;
+  if (step > 0) {
+    currentIdx = stepOrder.indexOf(step) !== -1 ? stepOrder.indexOf(step) : stepOrder.findIndex(s => s >= step);
+  }
 
   stepOrder.forEach((s, i) => {
     const railId = railMap[s];
     if (!railId) return;
     const el = document.getElementById(railId);
     if (!el) return;
-    if (i < currentIdx) {
-      el.className = 'sidebar-step done';
+    // Preserve the data-step attribute class — only change state class
+    const dataStep = el.getAttribute('data-step');
+    const baseClass = `sidebar-step`;
+    if (currentIdx === -1) {
+      el.className = `${baseClass} todo`;
+    } else if (i < currentIdx) {
+      el.className = `${baseClass} done`;
     } else if (i === currentIdx) {
-      el.className = 'sidebar-step active';
+      el.className = `${baseClass} active`;
     } else {
-      el.className = 'sidebar-step todo';
+      el.className = `${baseClass} todo`;
     }
+    // Restore data-step so CSS identity colours work
+    el.setAttribute('data-step', dataStep);
   });
 }
 
@@ -2301,26 +2312,29 @@ function setRating(assetKey, value) {
   });
 }
 
-function submitRating() {
+async function submitRating() {
   const feedback = val('ratingFeedback');
   const ratings  = state.ratings || {};
 
-  // Store rating data — in future this feeds back into generation quality
   const ratingData = {
     ratings,
     feedback,
-    company:   state.brief.company   || '',
-    job_title: state.brief.job_title || '',
+    company:   state.brief.company          || '',
+    job_title: state.brief.job_title        || '',
     narrative: state.brief.narrative_thread || '',
     timestamp: new Date().toISOString(),
   };
 
-  // Store in sessionStorage for now — future: send to backend
+  // Send to backend — fire and forget, don't block UI
   try {
-    const existing = JSON.parse(sessionStorage.getItem('ratings') || '[]');
-    existing.push(ratingData);
-    sessionStorage.setItem('ratings', JSON.stringify(existing));
-  } catch(e) {}
+    await fetch('/api/submit-rating', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ratingData),
+    });
+  } catch(e) {
+    // Silently fail — rating loss is better than blocking the user
+  }
 
   hide('ratingSection');
   show('ratingPaths');
@@ -2387,7 +2401,7 @@ if ('IntersectionObserver' in window) {
   [
     { id: 'step1', step: 1 }, { id: 'step2', step: 2 }, { id: 'step25', step: 2.5 },
     { id: 'step3', step: 3 }, { id: 'step35', step: 3.5 }, { id: 'step4', step: 4 },
-    { id: 'step45', step: 4.5 }, { id: 'step5', step: 5 },
+    { id: 'step5', step: 5 },
   ].forEach(({ id, step }) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -2401,4 +2415,4 @@ if ('IntersectionObserver' in window) {
 }
 
 // Init
-updateProgress(1);
+updateProgress(0);
