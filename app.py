@@ -19,7 +19,23 @@ app = FastAPI()
 
 GROQ_KEY   = os.getenv("GROQ_API_KEY")
 TAVILY_KEY = os.getenv("TAVILY_API_KEY")
-GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+
+# Three Gemini keys — round-robin rotation, triples Flash capacity to 1500 RPD
+GEMINI_KEYS = [k for k in [
+    os.getenv("GEMINI_API_KEY"),
+    os.getenv("GEMINI_API_KEY_2"),
+    os.getenv("GEMINI_API_KEY_3"),
+] if k]
+GEMINI_KEY = GEMINI_KEYS[0] if GEMINI_KEYS else None
+_gemini_key_index = 0
+
+def get_gemini_key():
+    global _gemini_key_index
+    if not GEMINI_KEYS:
+        return None
+    key = GEMINI_KEYS[_gemini_key_index % len(GEMINI_KEYS)]
+    _gemini_key_index += 1
+    return key
 
 groq_client   = Groq(api_key=GROQ_KEY or "dummy")
 tavily_client = TavilyClient(api_key=TAVILY_KEY or "dummy")
@@ -507,22 +523,23 @@ def llm(prompt, max_tokens=800, quality="fast", temperature=None, retries=3):
     raise Exception("LLM error: rate limit — wait a moment and try again")
 
 # ── Gemini LLM — generation and adversarial judging ───────────────────────────
-def llm_gemini(prompt, max_tokens=1200, model=None, temperature=0.7, retries=3):
+def llm_gemini(prompt, max_tokens=1200, model=None, temperature=0.7):
     """
     model=MODEL_GEMINI_FLASH → cover letter generation, bullets, cold email
     model=MODEL_GEMINI_PRO   → adversarial judge (cross-model critique)
 
-    Falls back to Groq 70b if GEMINI_API_KEY is not set or Gemini call fails,
-    so the product degrades gracefully rather than breaking.
+    Rotates across up to 3 Gemini keys on 429 — triples Flash capacity.
+    Falls back to Groq 70b if all keys exhausted or Gemini not configured.
     """
-    if not GEMINI_KEY:
-        # Graceful degradation — Gemini not configured, fall back to Groq 70b
+    if not GEMINI_KEYS:
         return llm(prompt, max_tokens=max_tokens, quality="high", temperature=temperature)
 
     target_model = model or MODEL_GEMINI_FLASH
+    keys_to_try = list(GEMINI_KEYS)  # try all available keys
 
-    for attempt in range(retries):
+    for key in keys_to_try:
         try:
+            genai.configure(api_key=key)
             gemini_model = genai.GenerativeModel(
                 model_name=target_model,
                 generation_config=genai.types.GenerationConfig(
@@ -535,17 +552,19 @@ def llm_gemini(prompt, max_tokens=1200, model=None, temperature=0.7, retries=3):
         except Exception as e:
             err = str(e)
             if '429' in err or 'quota' in err.lower() or 'rate' in err.lower():
-                if attempt < retries - 1:
-                    wait = 8 * (attempt + 1)
-                    time.sleep(wait)
-                    continue
-            # Non-rate-limit error or final attempt — fall back to Groq 70b
+                # Rate limited on this key — try next key immediately
+                continue
+            # Non-rate-limit error — fall back to Groq immediately
             try:
                 return llm(prompt, max_tokens=max_tokens, quality="high", temperature=temperature)
             except Exception:
                 raise Exception(f"Gemini error (fallback also failed): {err}")
 
-    raise Exception("Gemini error: rate limit exhausted")
+    # All keys exhausted — fall back to Groq
+    try:
+        return llm(prompt, max_tokens=max_tokens, quality="high", temperature=temperature)
+    except Exception as e:
+        raise Exception(f"Gemini error: all keys rate limited, Groq fallback also failed: {str(e)}")
 
 # ── Parsing helpers ────────────────────────────────────────────────────────────
 def parse_field(text, field_name):
@@ -671,9 +690,8 @@ def build_voice_instruction(writing_sample=""):
 # ── Four-search Tavily — deep company research ─────────────────────────────────
 def run_company_research(company, job_title, jd_text):
     """
-    Four targeted searches replacing the single generic search.
-    Each search targets a specific dimension of company intelligence.
-    Returns four processed summaries + company_hook.
+    Four targeted searches — run in parallel via threads, then LLM-processed.
+    Drops research time from 30-40s to 10-15s.
     """
     results = {
         'strategic': '',
@@ -694,36 +712,30 @@ def run_company_research(company, job_title, jd_text):
         except:
             return ""
 
-    # Search 1 — Strategic context: what is changing, why this hire exists now
-    s1 = safe_search(
-        f"{company} strategy product direction 2025 news funding expansion",
-        depth="advanced", max_r=4, days=180
-    )
+    # Run all four searches in parallel using threads
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    search_tasks = {
+        's1':  (f"{company} strategy product direction 2025 news funding expansion", "advanced", 4, 180),
+        's2a': (f"{company} culture employees work experience review 2024 2025", "advanced", 3, 365),
+        's2b': (f"{company} {job_title} interview process questions experience glassdoor", "advanced", 3, 365),
+        's3':  (f"{company} {job_title} responsibilities day to day what does job involve", "advanced", 3, 365),
+        's4':  (f"{company} competitors market challenges 2025", "basic", 3, 180),
+    }
+    search_results = {}
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = {executor.submit(safe_search, *args): key for key, args in search_tasks.items()}
+        for future in as_completed(futures):
+            key = futures[future]
+            try:
+                search_results[key] = future.result()
+            except:
+                search_results[key] = ""
 
-    # Search 2a — Culture reality: what working there is actually like
-    s2a = safe_search(
-        f"{company} culture employees work experience review 2024 2025",
-        depth="advanced", max_r=3, days=365
-    )
-    # Search 2b — Interview process
-    s2b = safe_search(
-        f"{company} {job_title} interview process questions experience glassdoor",
-        depth="advanced", max_r=3, days=365
-    )
-
-    # Search 3 — Role reality: what the work actually involves day to day
-    s3 = safe_search(
-        f"{company} {job_title} responsibilities day to day what does job involve",
-        depth="advanced", max_r=3, days=365
-    )
-
-    # Search 4 — Industry pressure: competitive context
-    s4 = safe_search(
-        f"{company} competitors market challenges 2025",
-        depth="basic", max_r=3, days=180
-    )
-
-    time.sleep(1)
+    s1  = search_results.get('s1', '')
+    s2a = search_results.get('s2a', '')
+    s2b = search_results.get('s2b', '')
+    s3  = search_results.get('s3', '')
+    s4  = search_results.get('s4', '')
 
     # Process Search 1 — Strategic context
     if s1:
@@ -756,8 +768,6 @@ SEARCH RESULTS:
             )
         except:
             pass
-
-    time.sleep(1)
 
     # Process Search 2 — Culture and interview process
     if s2a or s2b:
@@ -801,8 +811,6 @@ INTERVIEW PROCESS RESULTS:
         if s2b:
             results['interview_process'] = s2b[:1000]
 
-    time.sleep(1)
-
     # Process Search 3 — Role reality
     if s3:
         try:
@@ -836,8 +844,6 @@ SEARCH RESULTS:
             )
         except:
             pass
-
-    time.sleep(1)
 
     # Process Search 4 — Industry pressure
     if s4:
@@ -958,6 +964,32 @@ SOFT_SIGNALS: [1-2 cultural expectations visible in JD language]""",
                       'HIRING_MOMENT','MUST_HAVE_SIGNALS','SOFT_SIGNALS']:
             brief[field.lower()] = parse_field(combined, field)
 
+        # Derive company stage from strategic context — used by cover letter P3 and routing
+        hiring_moment = brief.get('hiring_moment', '').lower()
+        strategic = company_research.get('strategic', '').lower()
+        if any(w in strategic for w in ['series', 'funding', 'seed', 'startup', 'early']):
+            brief['derived_company_stage'] = 'early'
+        elif any(w in strategic for w in ['ipo', 'public', 'nasdaq', 'nyse', 'enterprise']):
+            brief['derived_company_stage'] = 'public'
+        elif hiring_moment == 'growth':
+            brief['derived_company_stage'] = 'scaling'
+        else:
+            brief['derived_company_stage'] = 'growing'
+
+        # Derive career situation from parsed CV — used by routing and cover letter
+        parsed_cv = brief.get('parsed_cv', {})
+        transitions = (parsed_cv.get('career_transitions', '') or '').lower()
+        gaps = (parsed_cv.get('gaps_in_timeline', '') or '').lower()
+        arc = (parsed_cv.get('career_arc', '') or '').lower()
+        if gaps and gaps != 'none':
+            brief['derived_career_situation'] = 'gap'
+        elif transitions and transitions != 'none':
+            brief['derived_career_situation'] = 'pivot'
+        elif any(w in arc for w in ['senior', 'lead', 'director', 'head', 'vp']):
+            brief['derived_career_situation'] = 'step_up'
+        else:
+            brief['derived_career_situation'] = 'growing'
+
         time.sleep(1.5)
 
         # Pain point generation — Groq 70b
@@ -1039,12 +1071,13 @@ CANDIDATE BACKGROUND:
 {cv_text[:800]}
 
 OUTPUT FORMAT — exactly 5 lines, nothing else, no markdown:
-PAIN_1: [situation — 2-3 sentences]
-PAIN_2: [situation — 2-3 sentences]
-PAIN_3: [situation — 2-3 sentences]
-PAIN_4: [situation — 2-3 sentences]
-PAIN_5: [situation — 2-3 sentences]""",
-            max_tokens=700, quality="high"
+Each pain point is ONE sentence, maximum 20 words. A situation, not a capability.
+PAIN_1: [one sentence — specific situation, max 20 words]
+PAIN_2: [one sentence — specific situation, max 20 words]
+PAIN_3: [one sentence — specific situation, max 20 words]
+PAIN_4: [one sentence — specific situation, max 20 words]
+PAIN_5: [one sentence — specific situation, max 20 words]""",
+            max_tokens=400, quality="high"
         )
 
         pain_points = []
@@ -1347,15 +1380,19 @@ FULL CV TEXT:
 
 YOUR TASK:
 Select the 3 to 5 most improvable bullet points from this CV for this
-specific role. Prioritise bullets where the candidate has real evidence
-available that the bullet currently undersells — not the weakest bullets,
-the most improvable ones.
+specific role. Only select bullets that directly address one of the
+selected pain points below — do not select bullets based on general
+CV quality.
+
+SELECTED PAIN POINTS — only select bullets that address these:
+{pain_str if pain_str else "Select bullets most relevant to the role."}
 
 WHY THIS MATTERS:
 These bullets will be rewritten at generation using the candidate's
 answers. The question you generate for each bullet must target the
 precise gap between what the bullet currently says and what it needs
-to say. One question per bullet — the most valuable question only.
+to say to address a pain point. One question per bullet — the most
+valuable question only.
 
 GAP TYPE CLASSIFICATION:
 For each bullet that needs enrichment, identify its primary gap type:
