@@ -1,120 +1,711 @@
-===== Application Startup at 2026-04-27 15:03:22 =====
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outreach Architect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
 
-INFO:     Started server process [1]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:7860 (Press CTRL+C to quit)
-INFO:     10.16.27.106:25287 - "GET /?logs=container&logs-api=true HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.11/site-packages/starlette/responses.py", line 332, in __call__
-    stat_result = await anyio.to_thread.run_sync(os.stat, self.path)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/anyio/to_thread.py", line 63, in run_sync
-    return await get_async_backend().run_sync_in_worker_thread(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2518, in run_sync_in_worker_thread
-    return await future
-           ^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 1002, in run
-    result = context.run(func, *args)
-             ^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: 'static/index.html'
+<!-- Toast -->
+<div class="toast hidden" id="toast"></div>
 
-During handling of the above exception, another exception occurred:
+<!-- Momentum singleton -->
+<div id="momentumSingleton">
+  <span class="momentum-label" id="momentumLabel"></span>
+  <p class="momentum-text" id="momentumText"></p>
+  <p class="momentum-thread hidden" id="momentumThread"></p>
+</div>
 
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
-    await super().__call__(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 187, in __call__
-    raise exc
-  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 165, in __call__
-    await self.app(scope, receive, _send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 715, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 735, in app
-    await route.handle(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 288, in handle
-    await self.app(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 76, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 74, in app
-    await response(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/responses.py", line 335, in __call__
-    raise RuntimeError(f"File at path {self.path} does not exist.")
-RuntimeError: File at path static/index.html does not exist.
-INFO:     10.16.1.233:10298 - "GET /?logs=container&logs-api=true HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.11/site-packages/starlette/responses.py", line 332, in __call__
-    stat_result = await anyio.to_thread.run_sync(os.stat, self.path)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/anyio/to_thread.py", line 63, in run_sync
-    return await get_async_backend().run_sync_in_worker_thread(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2518, in run_sync_in_worker_thread
-    return await future
-           ^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 1002, in run
-    result = context.run(func, *args)
-             ^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: 'static/index.html'
+<!-- App shell: sidebar rail + main content -->
+<div class="app-shell">
 
-During handling of the above exception, another exception occurred:
+  <!-- LEFT RAIL — progress sidebar -->
+  <nav class="sidebar-rail" id="sidebarRail">
+    <div class="sidebar-brand">Outreach Architect</div>
+    <div class="sidebar-steps">
 
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
-    await super().__call__(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 187, in __call__
-    raise exc
-  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 165, in __call__
-    await self.app(scope, receive, _send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 715, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 735, in app
-    await route.handle(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 288, in handle
-    await self.app(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 76, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 74, in app
-    await response(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/responses.py", line 335, in __call__
-    raise RuntimeError(f"File at path {self.path} does not exist.")
-RuntimeError: File at path static/index.html does not exist.
+      <div class="sidebar-step todo" id="srail1" data-step="1">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">01</span>
+          <span class="srail-name">Your Story</span>
+        </div>
+      </div>
+
+      <div class="sidebar-step todo" id="srail2" data-step="2">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">02</span>
+          <span class="srail-name">Set Role</span>
+        </div>
+      </div>
+
+      <div class="sidebar-step todo" id="srail3" data-step="3">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">03</span>
+          <span class="srail-name">Read Truth</span>
+        </div>
+      </div>
+
+      <div class="sidebar-step todo" id="srail35" data-step="3.5">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">03.5</span>
+          <span class="srail-name">Sharpen</span>
+        </div>
+      </div>
+
+      <div class="sidebar-step todo" id="srail4" data-step="4">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">04</span>
+          <span class="srail-name">Your Voice</span>
+        </div>
+      </div>
+
+      <div class="sidebar-step todo" id="srail5" data-step="5">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">05</span>
+          <span class="srail-name">Assets</span>
+        </div>
+      </div>
+
+    </div>
+    <button class="dm-btn" id="dmBtn" onclick="toggleDark()">Dark mode</button>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+  <!-- Hero — billboard test: product, purpose, action in 2 seconds -->
+  <div class="hero">
+    <h1 class="hero-title">Outreach Architect</h1>
+    <p class="hero-tagline">Your application deserves to have a personality that you determine.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 0 — CHOOSE WHAT TO BUILD
+  ═══════════════════════════════════════ -->
+  <section class="step active" id="step0">
+    <div class="step-header">
+      <p class="step-eyebrow">Start here</p>
+      <h2 class="step-title">Built for the role that matters.</h2>
+      <p class="step-subtitle">Select what you need. We build only that.</p>
+    </div>
+
+    <div class="asset-list" id="assetSelectGrid">
+
+      <div class="asset-list-item" data-asset="Cover Letter" onclick="toggleAssetCard(this)">
+        <div class="asset-list-body">
+          <span class="asset-list-name">Cover Letter</span>
+          <span class="asset-list-desc">Written from your profile for this job.</span>
+        </div>
+        <div class="asset-list-check"></div>
+      </div>
+
+      <div class="asset-list-item" data-asset="Resume Bullets" onclick="toggleAssetCard(this)">
+        <div class="asset-list-body">
+          <span class="asset-list-name">Resume Bullets</span>
+          <span class="asset-list-desc">Your bullets, rewritten to get selected.</span>
+        </div>
+        <div class="asset-list-check"></div>
+      </div>
+
+      <div class="asset-list-item" data-asset="Interview Prep" onclick="toggleAssetCard(this)">
+        <div class="asset-list-body">
+          <span class="asset-list-name">Interview Prep</span>
+          <span class="asset-list-desc">The right questions. Your best answers.</span>
+        </div>
+        <div class="asset-list-check"></div>
+      </div>
+
+      <div class="asset-list-item" data-asset="Cold Outreach Email" onclick="toggleAssetCard(this)">
+        <div class="asset-list-body">
+          <span class="asset-list-name">Cold Outreach Email</span>
+          <span class="asset-list-desc">Email to grab a recruiter's attention.</span>
+        </div>
+        <div class="asset-list-check"></div>
+      </div>
+
+      <div class="asset-list-item" data-asset="Answer Application Form" onclick="toggleAssetCard(this)">
+        <div class="asset-list-body">
+          <span class="asset-list-name">Answer Application Form</span>
+          <span class="asset-list-desc">Personalised answers to application questions.</span>
+        </div>
+        <div class="asset-list-check"></div>
+      </div>
+
+    </div>
+
+    <div class="full-package-card" id="fullPackageCard" onclick="toggleFullPackage()">
+      <div class="full-package-inner">
+        <div class="full-package-body">
+          <span class="full-package-name">Full Application Package</span>
+          <span class="full-package-desc">Every asset, built from one brief.</span>
+        </div>
+        <div class="asset-list-check" id="fullPackageCheck"></div>
+      </div>
+    </div>
+
+    <div class="asset-nudge hidden" id="assetNudge"></div>
+    <button class="btn-primary" id="step0Btn" onclick="completeStep0()">Continue &#8594;</button>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       STEP 1 — YOUR STORY
+  ═══════════════════════════════════════ -->
+  <section class="step active" id="step1">
+    <div class="step-header">
+      <span class="step-eyebrow">Step 1 of 5</span>
+      <h2 class="step-title">Your Story</h2>
+      <p class="step-subtitle">Add your CV. Fuller is sharper.</p>
+    </div>
+
+    <div class="privacy-badge">
+      <span>&#128274;</span>
+      Your CV stays private. Used only to build your brief — never stored, never shared.
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">How would you like to add your CV?</label>
+      <div class="toggle-row">
+        <button class="toggle-btn active" id="cvPasteBtn" onclick="switchMethod('cv','paste')">Paste text</button>
+        <button class="toggle-btn"        id="cvUploadBtn" onclick="switchMethod('cv','upload')">Upload file</button>
+      </div>
+    </div>
+
+    <div id="cvPasteArea" class="field-group">
+      <textarea class="textarea" id="cvText" rows="10" placeholder="Your full CV goes here. We will find out what matters."></textarea>
+    </div>
+
+    <div id="cvUploadArea" class="field-group hidden">
+      <label class="upload-zone" id="cvUploadZone"
+        ondragover="handleDragOver(event,'cvUploadZone')"
+        ondragleave="handleDragLeave(event,'cvUploadZone')"
+        ondrop="handleDrop(event,'cv')">
+        <span class="upload-icon">&#8679;</span>
+        <span class="upload-label">Drop your CV here or click to browse</span>
+        <span class="upload-hint">.txt  .md  .pdf  .docx</span>
+        <input type="file" id="cvFile" accept=".txt,.md,.pdf,.docx" onchange="handleFile(event,'cv')" style="display:none">
+      </label>
+      <div class="upload-status hidden" id="cvFileStatus"></div>
+    </div>
+
+    <p class="hint-text">If your CV uses columns or tables, paste the text version — formatting can interfere with extraction.</p>
+
+    <button class="btn-primary" onclick="completeStep1()">Continue &#8594;</button>
+  </section>
+
+  <div class="step-collapsed hidden" id="step1Collapsed">
+    <div class="collapsed-inner">
+      <div class="collapsed-left">
+        <span class="check-badge">&#10003;</span>
+        <div><span class="collapsed-eyebrow">Step 1</span><span class="collapsed-name">Your Story</span></div>
+      </div>
+      <div class="collapsed-right">
+        <span class="collapsed-summary" id="step1Summary">Story loaded</span>
+        <button class="edit-btn" onclick="editStep('step1','step1Collapsed')">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 2 — SET ROLE
+  ═══════════════════════════════════════ -->
+  <section class="step hidden" id="step2">
+    <div class="step-header">
+      <span class="step-eyebrow">Step 2 of 5</span>
+      <h2 class="step-title">Set Role</h2>
+      <p class="step-subtitle">Paste the full job description. We'll decode what they actually need.</p>
+    </div>
+
+    <!-- Stage indicator — makes the UX flow explicit -->
+    <div class="flow-stages" id="flowStages">
+      <div class="flow-stage active" id="flowStage1">
+        <span class="flow-stage-num">1</span>
+        <span class="flow-stage-label">Add JD</span>
+      </div>
+      <div class="flow-stage-line"></div>
+      <div class="flow-stage" id="flowStage2">
+        <span class="flow-stage-num">2</span>
+        <span class="flow-stage-label">Decode</span>
+      </div>
+      <div class="flow-stage-line"></div>
+      <div class="flow-stage" id="flowStage3">
+        <span class="flow-stage-num">3</span>
+        <span class="flow-stage-label">Confirm</span>
+      </div>
+      <div class="flow-stage-line"></div>
+      <div class="flow-stage" id="flowStage4">
+        <span class="flow-stage-num">4</span>
+        <span class="flow-stage-label">Select</span>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">How would you like to add the job description?</label>
+      <div class="toggle-row">
+        <button class="toggle-btn active" id="jdPasteBtn" onclick="switchJdMethod('paste')">Paste text</button>
+        <button class="toggle-btn"        id="jdImageBtn" onclick="switchJdMethod('image')">Upload image</button>
+        <button class="toggle-btn"        id="jdUploadBtn" onclick="switchJdMethod('upload')">Upload PDF</button>
+      </div>
+    </div>
+
+    <div id="jdPasteArea" class="field-group">
+      <textarea class="textarea" id="jdText" rows="8" placeholder="Paste it in full. Every word tells us something."></textarea>
+    </div>
+
+    <div id="jdImageArea" class="field-group hidden">
+      <label class="upload-zone" id="jdImageZone"
+        ondragover="handleDragOver(event,'jdImageZone')"
+        ondragleave="handleDragLeave(event,'jdImageZone')"
+        ondrop="handleDropJdImage(event)">
+        <span class="upload-icon">&#8679;</span>
+        <span class="upload-label">Drop a screenshot or photo of the JD here</span>
+        <span class="upload-hint">.jpg  .jpeg  .png</span>
+        <input type="file" id="jdImageFile" accept=".jpg,.jpeg,.png" onchange="handleJdImage(event)" style="display:none">
+      </label>
+      <div class="upload-status hidden" id="jdImageStatus"></div>
+      <!-- Extracted text preview — editable before continuing -->
+      <div id="jdImagePreview" class="hidden" style="margin-top:12px;">
+        <label class="field-label" style="font-size:12px;color:var(--text3);">Extracted text — review and edit if needed</label>
+        <textarea class="textarea" id="jdImageText" rows="8" placeholder="Extracted JD text will appear here…"></textarea>
+      </div>
+    </div>
+
+    <div id="jdUploadArea" class="field-group hidden">
+      <label class="upload-zone" id="jdUploadZone"
+        ondragover="handleDragOver(event,'jdUploadZone')"
+        ondragleave="handleDragLeave(event,'jdUploadZone')"
+        ondrop="handleDrop(event,'jd')">
+        <span class="upload-icon">&#8679;</span>
+        <span class="upload-label">Drop the job description PDF here or click to browse</span>
+        <span class="upload-hint">.pdf</span>
+        <input type="file" id="jdFile" accept=".pdf" onchange="handleJdPdf(event)" style="display:none">
+      </label>
+      <div class="upload-status hidden" id="jdFileStatus"></div>
+      <!-- Extracted text preview for PDF -->
+      <div id="jdPdfPreview" class="hidden" style="margin-top:12px;">
+        <label class="field-label" style="font-size:12px;color:var(--text3);">Extracted text — review and edit if needed</label>
+        <textarea class="textarea" id="jdPdfText" rows="8" placeholder="Extracted JD text will appear here…"></textarea>
+      </div>
+    </div>
+
+    <!-- Company name — always visible, user can pre-fill -->
+    <div class="field-group" style="margin-top:4px;">
+      <label class="field-label" style="font-size:12px;color:var(--text3);">Company name <span style="font-weight:400;">— we detect this automatically, or enter it here</span></label>
+      <input class="input-text" id="manualCompany" type="text" placeholder="e.g. Google, Stripe, Monzo…">
+    </div>
+
+    <button class="btn-primary" id="researchBtn" onclick="runResearch()">Decode this role &#8594;</button>
+
+    <!-- Loading state — properly wrapped -->
+    <div class="loading hidden" id="loadingResearch">
+      <div class="spinner"></div>
+      <div class="loading-content">
+        <div class="loading-stage" id="researchStage">Reading the job description…</div>
+        <div class="loading-substage" id="researchSubstage"></div>
+        <div class="loading-stages-track">
+          <div class="stage-dot active" id="rs0"></div>
+          <div class="stage-dot" id="rs1"></div>
+          <div class="stage-dot" id="rs2"></div>
+          <div class="stage-dot" id="rs3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2b: Org & Role confirmation — shown after research succeeds -->
+    <div class="hidden" id="orgRoleConfirm">
+      <div class="confirm-card">
+        <p class="confirm-card-label">&#10003; Detected — edit anything we got wrong</p>
+        <div class="confirm-fields">
+          <div class="confirm-field">
+            <label class="confirm-field-label">Company</label>
+            <div class="confirm-input-wrap">
+              <input class="input-text confirm-input" id="confirmedCompany" type="text" placeholder="Company name">
+              <span class="confirm-edit-hint">&#9998; edit</span>
+            </div>
+          </div>
+          <div class="confirm-field">
+            <label class="confirm-field-label">Role</label>
+            <div class="confirm-input-wrap">
+              <input class="input-text confirm-input" id="confirmedRole" type="text" placeholder="Job title">
+              <span class="confirm-edit-hint">&#9998; edit</span>
+            </div>
+          </div>
+        </div>
+        <p class="hint-text" style="color:var(--warn);">Wrong? Fix it here — company and role flow through every asset we build.</p>
+      </div>
+
+      <!-- Briefing -->
+      <details class="briefing-accordion" id="briefingAccordion" style="margin-top:12px;">
+        <summary>What we found about this company &#8595;</summary>
+        <div class="briefing-body" id="briefingBody"></div>
+      </details>
+    </div>
+
+    <!-- Step 2c: Pain points — shown after confirmation -->
+    <div class="hidden" id="painPointsSection">
+      <div class="field-group" style="margin-top:18px;">
+        <p class="field-label" style="margin-bottom:8px;">What we decoded they actually need — choose up to 2</p>
+        <p class="hint-text" style="margin-bottom:12px;">These become the spine of everything we build. Pick where your evidence is strongest.</p>
+
+        <div class="pain-counter">
+          <div class="pain-counter-pips">
+            <div class="pain-pip" id="pip-a"></div>
+            <div class="pain-pip" id="pip-b"></div>
+          </div>
+          <span id="painCounterText">0 of 2 selected</span>
+        </div>
+
+        <div id="painPointsList" class="pain-list"></div>
+      </div>
+
+      <button class="context-trigger hidden" id="contextTrigger" onclick="showContext()">
+        + Anything the JD doesn't show?
+      </button>
+      <div class="hidden" id="contextArea">
+        <div class="field-group context-expanded">
+          <textarea class="textarea" id="userInstruction" rows="2" placeholder="e.g. The team is going through a transition — that context matters here."></textarea>
+          <p class="hint-text">Optional — insider context makes the difference between a good brief and a precise one.</p>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="confirmPainBtn" onclick="confirmPainPoints()">Lock these in &#8594;</button>
+
+      <div class="loading hidden" id="loadingQuestions">
+        <div class="spinner"></div>
+        <div class="loading-content">
+          <div class="loading-stage">Setting up your brief. One moment…</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="step-collapsed hidden" id="step2Collapsed">
+    <div class="collapsed-inner">
+      <div class="collapsed-left">
+        <span class="check-badge">&#10003;</span>
+        <div><span class="collapsed-eyebrow">Step 2</span><span class="collapsed-name">Set Role</span></div>
+      </div>
+      <div class="collapsed-right">
+        <span class="collapsed-summary" id="step2Summary">Role set</span>
+        <button class="edit-btn" onclick="editStep('step2','step2Collapsed')">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 3 — READ TRUTH
+  ═══════════════════════════════════════ -->
+  <section class="step hidden" id="step3">
+    <div class="step-header">
+      <span class="step-eyebrow">Step 3 — Read Truth</span>
+      <h2 class="step-title">Read Truth</h2>
+      <p class="step-subtitle">The argument you approve here runs through every asset.</p>
+    </div>
+
+    <!-- Narrative thread — the primary moment, serif, prominent -->
+    <div class="narrative-reveal hidden" id="narrativeReveal">
+      <p class="narrative-eyebrow">Your application argues</p>
+      <p class="narrative-thread" id="narrativeThread"></p>
+    </div>
+
+    <!-- Fit analysis — two column Parker layout -->
+    <div class="gap-analysis" id="gapAnalysis">
+      <p class="placeholder-text">Complete Step 2 first — your fit analysis will appear here.</p>
+    </div>
+
+    <!-- Angle — left-border callout, surfaces after gap analysis -->
+    <div class="angle-callout hidden" id="angleCallout">
+      <p class="angle-eyebrow">Angle</p>
+      <p class="angle-text" id="angleText"></p>
+    </div>
+
+    <button class="btn-primary hidden" id="approveBtn" onclick="approveBrief()">This is my argument. Build on it &#8594;</button>
+
+    <div class="loading hidden" id="loadingBullets">
+      <div class="spinner"></div>
+      <div class="loading-content">
+        <div class="loading-stage">Finding which experiences make the strongest case for this role…</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="step-collapsed hidden" id="step3Collapsed">
+    <div class="collapsed-inner">
+      <div class="collapsed-left">
+        <span class="check-badge">&#10003;</span>
+        <div><span class="collapsed-eyebrow">Step 3</span><span class="collapsed-name">Read Truth</span></div>
+      </div>
+      <div class="collapsed-right">
+        <span class="collapsed-summary">Truth Read</span>
+        <button class="edit-btn" onclick="editStep('step3','step3Collapsed')">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 3.5 — SHARPEN TRUTH
+  ═══════════════════════════════════════ -->
+  <section class="step hidden" id="step35">
+    <div class="step-header">
+      <span class="step-eyebrow">Step 3.5</span>
+      <h2 class="step-title">Sharpen Truth</h2>
+      <p class="step-subtitle">Answer what you can. Every answer makes the output more precise.</p>
+    </div>
+
+    <div class="trust-line">Your answers are used to strengthen your assets. They never appear word-for-word.</div>
+
+    <!-- Bullet diagnosis cards — populated by approveBrief() -->
+    <div class="bullet-diagnosis hidden" id="bulletDiagnosis"></div>
+
+    <!-- One fixed open field — replaces Q1-Q4 entirely -->
+    <div class="field-group" style="margin-top:20px;">
+      <label class="field-label">Anything that would strengthen your case <span style="font-weight:400;color:var(--text3);">— optional</span></label>
+      <textarea class="textarea" id="anythingMissed" rows="3"
+        placeholder="Context, constraints, or evidence your CV doesn't capture — anything that would help us make a stronger case for you."></textarea>
+    </div>
+
+    <button class="btn-primary" onclick="proceedToTexture()">Continue &#8594;</button>
+    <p class="hint-text" style="margin-top:8px;">Everything here is optional. Continue when you're ready.</p>
+  </section>
+
+  <div class="step-collapsed hidden" id="step35Collapsed">
+    <div class="collapsed-inner">
+      <div class="collapsed-left">
+        <span class="check-badge">&#10003;</span>
+        <div><span class="collapsed-eyebrow">Step 3.5</span><span class="collapsed-name">Sharpen Truth</span></div>
+      </div>
+      <div class="collapsed-right">
+        <span class="collapsed-summary">Truth Sharpened</span>
+        <button class="edit-btn" onclick="editStep('step35','step35Collapsed')">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 4 — DEFINE TEXTURE
+  ═══════════════════════════════════════ -->
+  <section class="step hidden" id="step4">
+    <div class="step-header">
+      <span class="step-eyebrow">Step 4 of 5</span>
+      <h2 class="step-title">Your Voice</h2>
+      <p class="step-subtitle">Two things — both optional, both change the output significantly.</p>
+    </div>
+
+    <!-- Referral -->
+    <div class="field-group">
+      <label class="field-label">Were you referred by someone?</label>
+      <input class="input-text" id="referralName" type="text"
+        placeholder="Their name — e.g. Priya Mehta. Leave blank if not referred.">
+      <p class="hint-text">A referral name goes into the first sentence of your cover letter naturally.</p>
+    </div>
+
+    <!-- Writing sample -->
+    <div class="field-group" style="margin-top:6px;padding-top:20px;border-top:1px solid var(--divider);">
+      <label class="field-label">Paste something you've written <span style="font-weight:400;color:var(--text3);">— optional but valuable</span></label>
+      <textarea class="textarea" id="writingSample" rows="4"
+        placeholder="An email, a Slack message, a LinkedIn post — anything. We take the style and leave the content."></textarea>
+      <p class="hint-text">We read the rhythm, formality, and sentence length. If you provide this, every asset sounds like you specifically — not like a polished template.</p>
+    </div>
+
+    <button class="btn-primary" onclick="proceedToChoosePath()">Continue &#8594;</button>
+  </section>
+
+  <div class="step-collapsed hidden" id="step4Collapsed">
+    <div class="collapsed-inner">
+      <div class="collapsed-left">
+        <span class="check-badge">&#10003;</span>
+        <div><span class="collapsed-eyebrow">Step 4</span><span class="collapsed-name">Define Texture</span></div>
+      </div>
+      <div class="collapsed-right">
+        <span class="collapsed-summary">Texture Defined</span>
+        <button class="edit-btn" onclick="editStep('step4','step4Collapsed')">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 4.25 — FORM INPUT (only if Answer Application Form selected)
+  ═══════════════════════════════════════ -->
+  <section class="step hidden" id="step425">
+    <div class="step-header">
+      <span class="step-eyebrow">Application Form</span>
+      <h2 class="step-title">Your Form Questions</h2>
+      <p class="step-subtitle">Give us the form. We'll answer every field from your brief.</p>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">How would you like to add the form questions?</label>
+      <div class="toggle-row">
+        <button class="toggle-btn active" id="formPasteBtn" onclick="switchFormMethod('paste')">Paste questions</button>
+        <button class="toggle-btn"        id="formImageBtn" onclick="switchFormMethod('image')">Upload screenshot</button>
+      </div>
+    </div>
+
+    <div id="formPasteArea" class="field-group">
+      <textarea class="textarea" id="formText" rows="8"
+        placeholder="Paste the form questions here — one per line or as they appear. Include any word limits or instructions shown."></textarea>
+    </div>
+
+    <div id="formImageArea" class="field-group hidden">
+      <label class="upload-zone" id="formImageZone"
+        ondragover="handleDragOver(event,'formImageZone')"
+        ondragleave="handleDragLeave(event,'formImageZone')"
+        ondrop="handleDropFormImage(event)">
+        <span class="upload-icon">&#8679;</span>
+        <span class="upload-label">Drop a screenshot of the application form here</span>
+        <span class="upload-hint">.jpg  .jpeg  .png</span>
+        <input type="file" id="formImageFile" accept=".jpg,.jpeg,.png" onchange="handleFormImage(event)" style="display:none">
+      </label>
+      <div class="upload-status hidden" id="formImageStatus"></div>
+    </div>
+
+    <p class="hint-text" style="margin-top:8px;">We extract every question and answer each one from your CV and brief. You review before using.</p>
+
+    <button class="btn-primary" onclick="proceedFromForm()">Continue &#8594;</button>
+    <p class="hint-text" style="margin-top:6px;">Form answers are generated at the end — alongside your other assets.</p>
+  </section>
+
+  <div class="step-collapsed hidden" id="step425Collapsed">
+    <div class="collapsed-inner">
+      <div class="collapsed-left">
+        <span class="check-badge">&#10003;</span>
+        <div><span class="collapsed-eyebrow">Form</span><span class="collapsed-name">Your Form Questions</span></div>
+      </div>
+      <div class="collapsed-right">
+        <span class="collapsed-summary" id="step425Summary">Form ready</span>
+        <button class="edit-btn" onclick="editStep('step425','step425Collapsed')">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       GENERATE SECTION — shown after Step 4
+  ═══════════════════════════════════════ -->
+  <div class="hidden" id="generateSection">
+
+    <!-- Routing confirmation — only if Cover Letter selected -->
+    <div class="routing-card hidden" id="routingCard">
+      <div class="routing-card-header">
+        <span class="routing-card-label">Before we build — confirm the approach</span>
+        <p class="routing-card-sub">Pre-selected from your brief. Tap to change anything.</p>
+      </div>
+      <div class="routing-section" id="routingOpeningSection">
+        <p class="routing-section-title">How we open your cover letter</p>
+        <div class="routing-options" id="routingOpeningOptions"></div>
+      </div>
+      <div class="routing-section" id="routingP3Section">
+        <p class="routing-section-title">How we connect you to the company</p>
+        <div class="routing-options" id="routingP3Options"></div>
+      </div>
+      <div class="loading hidden" id="loadingRouting">
+        <div class="spinner"></div>
+        <div class="loading-content">
+          <div class="loading-stage">Reading your brief to suggest the best approach…</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="generateBtn" onclick="generateAssets()">Build &#8594;</button>
+
+    <div class="loading hidden" id="loadingGenerate">
+      <div class="spinner"></div>
+      <div class="loading-content">
+        <div class="loading-stage" id="generateStage">Starting with the brief you approved…</div>
+        <div class="loading-substage" id="generateSubstage"></div>
+        <div class="loading-stages-track">
+          <div class="stage-dot active" id="gs0"></div>
+          <div class="stage-dot" id="gs1"></div>
+          <div class="stage-dot" id="gs2"></div>
+          <div class="stage-dot" id="gs3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       STEP 5 — BUILD ASSETS
+  ═══════════════════════════════════════ -->
+  <section class="step hidden" id="step5">
+    <div class="step-header">
+      <span class="step-eyebrow">Step 5 of 5</span>
+      <h2 class="step-title">Build Assets</h2>
+      <p class="step-subtitle">Your assets. Built from the brief you approved. Each scored, each refinable.</p>
+    </div>
+
+    <!-- Peak moment — persistent, single pulse, never disappears (Peak-End Rule) -->
+    <div class="momentum-reveal hidden" id="momentumReveal">
+      <span class="momentum-label">&#127775; Assets ready</span>
+      <p class="momentum-text" id="momentumRevealText"></p>
+    </div>
+
+    <!-- Tab bar — dynamically populated with only generated assets (Hick's Law) -->
+    <div class="tabs-row" id="tabsRow"></div>
+
+    <!-- Tab panels — all hidden, populated dynamically -->
+    <div id="tabPanels"></div>
+
+    <!-- End moment — only appears after user clicks Done -->
+    <div class="end-moment hidden" id="endMoment">
+      <span class="end-moment-icon">&#10024;</span>
+      <h3 class="end-moment-title">Your assets are ready.</h3>
+      <p class="end-moment-sub">Built from one brief. Specific to this role, this company, traceable to the argument you approved.</p>
+
+      <!-- Done button — triggers rating -->
+      <div id="doneSection">
+        <button class="btn-primary" onclick="showRating()" style="margin-top:16px;">
+          Done with this application &#8594;
+        </button>
+      </div>
+
+      <!-- Rating section — hidden until Done is clicked -->
+      <div class="rating-section hidden" id="ratingSection">
+        <p class="rating-label">How did we do? Rate each asset.</p>
+        <p class="hint-text" style="margin-bottom:16px;">Your rating helps us improve every output.</p>
+
+        <div id="assetRatings"></div>
+
+        <div class="field-group" style="margin-top:16px;">
+          <label class="field-label" style="font-size:13px;">What could have been better? <span style="font-weight:400;color:var(--text3);">Optional</span></label>
+          <textarea class="textarea" id="ratingFeedback" rows="2"
+            placeholder="Anything that felt off, generic, or missed the mark…"></textarea>
+        </div>
+
+        <button class="btn-primary" onclick="submitRating()" style="margin-top:12px;">Submit &#8594;</button>
+      </div>
+
+      <!-- Post-rating paths — hidden until rating submitted -->
+      <div class="rating-paths hidden" id="ratingPaths">
+        <p class="rating-thankyou">Thank you. Every rating makes the next output sharper.</p>
+        <div class="end-moment-actions">
+          <button class="btn-primary" onclick="resetAll()">&#8635; Start a new application</button>
+        </div>
+        <button class="reset-link" onclick="showSuggestions()" style="margin-top:12px;display:block;">
+          Share a suggestion for us
+        </button>
+      </div>
+
+      <!-- Suggestions field — hidden until link clicked -->
+      <div class="hidden" id="suggestionsSection" style="margin-top:16px;">
+        <textarea class="textarea" id="suggestionsText" rows="3"
+          placeholder="What would you want this product to do that it doesn't yet?"></textarea>
+        <button class="btn-secondary" onclick="submitSuggestion()" style="margin-top:8px;">Send</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+</div><!-- end app-shell -->
+
+<script src="/static/app.js"></script>
+</body>
+</html>
