@@ -3417,7 +3417,7 @@ ANSWER: [your answer]
 
 @app.get("/")
 async def root():
-    return FileResponse("index.html")
+    return FileResponse("static/index.html")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
