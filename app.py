@@ -3417,6 +3417,34 @@ ANSWER: [your answer]
 
 @app.get("/")
 async def root():
-    return FileResponse("static/index.html")
+    return FileResponse("index.html")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# ── Rating submission — persists to file on HuggingFace ───────────────────────
+class RatingRequest(BaseModel):
+    ratings:   dict = {}
+    feedback:  str  = ""
+    company:   str  = ""
+    job_title: str  = ""
+    narrative: str  = ""
+    timestamp: str  = ""
+
+@app.post("/api/submit-rating")
+async def submit_rating(req: RatingRequest):
+    try:
+        import json, os
+        ratings_file = "ratings.jsonl"
+        entry = {
+            "ratings":   req.ratings,
+            "feedback":  req.feedback,
+            "company":   req.company,
+            "job_title": req.job_title,
+            "narrative": req.narrative,
+            "timestamp": req.timestamp,
+        }
+        with open(ratings_file, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
