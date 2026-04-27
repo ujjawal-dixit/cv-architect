@@ -6,44 +6,83 @@
 <title>Outreach Architect</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<!-- Momentum singleton — Von Restorff: one gold element at a time -->
+<!-- Toast -->
+<div class="toast hidden" id="toast"></div>
+
+<!-- Momentum singleton -->
 <div id="momentumSingleton">
   <span class="momentum-label" id="momentumLabel"></span>
   <p class="momentum-text" id="momentumText"></p>
   <p class="momentum-thread hidden" id="momentumThread"></p>
 </div>
 
-<!-- Toast for copy feedback — Gulf of Evaluation -->
-<div class="toast hidden" id="toast"></div>
+<!-- App shell: sidebar rail + main content -->
+<div class="app-shell">
 
-<!-- Progress bar -->
-<header class="topbar">
-  <div class="progress-track">
-    <div class="step-pip active" id="pip1"></div>
-    <div class="pip-line"        id="line1"></div>
-    <div class="step-pip todo"   id="pip2"></div>
-    <div class="pip-line"        id="line2"></div>
-    <div class="step-pip todo"   id="pip3"></div>
-    <div class="pip-line"        id="line3"></div>
-    <div class="step-pip todo"   id="pip4"></div>
-    <div class="pip-line"        id="line4"></div>
-    <div class="step-pip todo"   id="pip5"></div>
-  </div>
-  <button class="dm-btn" id="dmBtn" onclick="toggleDark()">Dark mode</button>
-</header>
+  <!-- LEFT RAIL — progress sidebar -->
+  <nav class="sidebar-rail" id="sidebarRail">
+    <div class="sidebar-brand">Outreach Architect</div>
+    <div class="sidebar-steps">
 
-<!-- Step label strip -->
-<div class="step-label-strip">
-  <span class="step-label-dot"></span>
-  <span id="stepLabelText">Step 1 — Your Story</span>
-</div>
+      <div class="sidebar-step todo" id="srail1" data-step="1">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">01</span>
+          <span class="srail-name">Your Story</span>
+        </div>
+      </div>
 
-<main class="main">
+      <div class="sidebar-step todo" id="srail2" data-step="2">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">02</span>
+          <span class="srail-name">Set Role</span>
+        </div>
+      </div>
+
+      <div class="sidebar-step todo" id="srail3" data-step="3">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">03</span>
+          <span class="srail-name">Read Truth</span>
+        </div>
+      </div>
+
+      <div class="sidebar-step todo" id="srail35" data-step="3.5">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">03.5</span>
+          <span class="srail-name">Sharpen</span>
+        </div>
+      </div>
+
+      <div class="sidebar-step todo" id="srail4" data-step="4">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">04</span>
+          <span class="srail-name">Your Voice</span>
+        </div>
+      </div>
+
+      <div class="sidebar-step todo" id="srail5" data-step="5">
+        <div class="srail-indicator"></div>
+        <div class="srail-label">
+          <span class="srail-num">05</span>
+          <span class="srail-name">Assets</span>
+        </div>
+      </div>
+
+    </div>
+    <button class="dm-btn" id="dmBtn" onclick="toggleDark()">Dark mode</button>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
 
   <!-- Hero — billboard test: product, purpose, action in 2 seconds -->
   <div class="hero">
@@ -56,76 +95,66 @@
   ═══════════════════════════════════════ -->
   <section class="step active" id="step0">
     <div class="step-header">
-      <span class="step-eyebrow">Start here</span>
-      <h2 class="step-title">What are you building today?</h2>
-      <p class="step-subtitle">Select what you need. We build only that — nothing extra.</p>
+      <p class="step-eyebrow">Start here</p>
+      <h2 class="step-title">Built for the role that matters.</h2>
+      <p class="step-subtitle">Select what you need. We build only that.</p>
     </div>
 
-    <!-- Asset grid — 2-3 columns, multi-select -->
-    <div class="asset-select-grid" id="assetSelectGrid">
+    <div class="asset-list" id="assetSelectGrid">
 
-      <div class="asset-select-card" data-asset="Cover Letter" onclick="toggleAssetCard(this)">
-        <span class="asset-select-icon">&#9998;</span>
-        <div class="asset-select-body">
-          <span class="asset-select-name">Cover Letter</span>
-          <span class="asset-select-desc">Written from your profile for this job.</span>
+      <div class="asset-list-item" data-asset="Cover Letter" onclick="toggleAssetCard(this)">
+        <div class="asset-list-body">
+          <span class="asset-list-name">Cover Letter</span>
+          <span class="asset-list-desc">Written from your profile for this job.</span>
         </div>
-        <span class="asset-select-check">&#10003;</span>
+        <div class="asset-list-check"></div>
       </div>
 
-      <div class="asset-select-card" data-asset="Resume Bullets" onclick="toggleAssetCard(this)">
-        <span class="asset-select-icon">&#9632;</span>
-        <div class="asset-select-body">
-          <span class="asset-select-name">Resume Bullets</span>
-          <span class="asset-select-desc">Your bullets, rewritten to get selected.</span>
+      <div class="asset-list-item" data-asset="Resume Bullets" onclick="toggleAssetCard(this)">
+        <div class="asset-list-body">
+          <span class="asset-list-name">Resume Bullets</span>
+          <span class="asset-list-desc">Your bullets, rewritten to get selected.</span>
         </div>
-        <span class="asset-select-check">&#10003;</span>
+        <div class="asset-list-check"></div>
       </div>
 
-      <div class="asset-select-card" data-asset="Interview Prep" onclick="toggleAssetCard(this)">
-        <span class="asset-select-icon">&#9654;</span>
-        <div class="asset-select-body">
-          <span class="asset-select-name">Interview Prep</span>
-          <span class="asset-select-desc">The right questions. Your best answers.</span>
+      <div class="asset-list-item" data-asset="Interview Prep" onclick="toggleAssetCard(this)">
+        <div class="asset-list-body">
+          <span class="asset-list-name">Interview Prep</span>
+          <span class="asset-list-desc">The right questions. Your best answers.</span>
         </div>
-        <span class="asset-select-check">&#10003;</span>
+        <div class="asset-list-check"></div>
       </div>
 
-      <div class="asset-select-card" data-asset="Cold Outreach Email" onclick="toggleAssetCard(this)">
-        <span class="asset-select-icon">&#9993;</span>
-        <div class="asset-select-body">
-          <span class="asset-select-name">Cold Outreach Email</span>
-          <span class="asset-select-desc">Email to grab attention of recruiter.</span>
+      <div class="asset-list-item" data-asset="Cold Outreach Email" onclick="toggleAssetCard(this)">
+        <div class="asset-list-body">
+          <span class="asset-list-name">Cold Outreach Email</span>
+          <span class="asset-list-desc">Email to grab a recruiter's attention.</span>
         </div>
-        <span class="asset-select-check">&#10003;</span>
+        <div class="asset-list-check"></div>
       </div>
 
-      <div class="asset-select-card" data-asset="Answer Application Form" onclick="toggleAssetCard(this)">
-        <span class="asset-select-icon">&#9634;</span>
-        <div class="asset-select-body">
-          <span class="asset-select-name">Answer Application Form</span>
-          <span class="asset-select-desc">Personalized answers to application questions.</span>
+      <div class="asset-list-item" data-asset="Answer Application Form" onclick="toggleAssetCard(this)">
+        <div class="asset-list-body">
+          <span class="asset-list-name">Answer Application Form</span>
+          <span class="asset-list-desc">Personalised answers to application questions.</span>
         </div>
-        <span class="asset-select-check">&#10003;</span>
+        <div class="asset-list-check"></div>
       </div>
 
     </div>
 
-    <!-- Full Package — elevated, full width, below grid -->
     <div class="full-package-card" id="fullPackageCard" onclick="toggleFullPackage()">
       <div class="full-package-inner">
-        <span class="full-package-icon">&#9733;</span>
         <div class="full-package-body">
           <span class="full-package-name">Full Application Package</span>
           <span class="full-package-desc">Every asset, built from one brief.</span>
         </div>
-        <span class="full-package-check" id="fullPackageCheck">&#10003;</span>
+        <div class="asset-list-check" id="fullPackageCheck"></div>
       </div>
     </div>
 
-    <!-- Nudge — appears on selection, inline -->
     <div class="asset-nudge hidden" id="assetNudge"></div>
-
     <button class="btn-primary" id="step0Btn" onclick="completeStep0()">Continue &#8594;</button>
   </section>
 
@@ -295,18 +324,24 @@
     <!-- Step 2b: Org & Role confirmation — shown after research succeeds -->
     <div class="hidden" id="orgRoleConfirm">
       <div class="confirm-card">
-        <p class="confirm-card-label">&#10003; Detected — confirm before continuing</p>
+        <p class="confirm-card-label">&#10003; Detected — edit anything we got wrong</p>
         <div class="confirm-fields">
           <div class="confirm-field">
             <label class="confirm-field-label">Company</label>
-            <input class="input-text confirm-input" id="confirmedCompany" type="text" placeholder="Company name">
+            <div class="confirm-input-wrap">
+              <input class="input-text confirm-input" id="confirmedCompany" type="text" placeholder="Company name">
+              <span class="confirm-edit-hint">&#9998; edit</span>
+            </div>
           </div>
           <div class="confirm-field">
             <label class="confirm-field-label">Role</label>
-            <input class="input-text confirm-input" id="confirmedRole" type="text" placeholder="Job title">
+            <div class="confirm-input-wrap">
+              <input class="input-text confirm-input" id="confirmedRole" type="text" placeholder="Job title">
+              <span class="confirm-edit-hint">&#9998; edit</span>
+            </div>
           </div>
         </div>
-        <p class="hint-text">Edit these if we got anything wrong — they flow through every asset we build.</p>
+        <p class="hint-text" style="color:var(--warn);">Wrong? Fix it here — company and role flow through every asset we build.</p>
       </div>
 
       <!-- Briefing -->
@@ -372,22 +407,29 @@
   ═══════════════════════════════════════ -->
   <section class="step hidden" id="step3">
     <div class="step-header">
-      <span class="step-eyebrow">Step 3 of 5</span>
+      <span class="step-eyebrow">Step 3 — Read Truth</span>
       <h2 class="step-title">Read Truth</h2>
-      <p class="step-subtitle">Read this carefully. The argument you approve here runs through every asset.</p>
+      <p class="step-subtitle">The argument you approve here runs through every asset.</p>
     </div>
 
-    <!-- Narrative reveal — persistent, not timed (Peak-End Rule) -->
+    <!-- Narrative thread — the primary moment, serif, prominent -->
     <div class="narrative-reveal hidden" id="narrativeReveal">
-      <span class="momentum-label">&#127919; Your application argues</span>
-      <p class="momentum-thread" id="narrativeThread"></p>
+      <p class="narrative-eyebrow">Your application argues</p>
+      <p class="narrative-thread" id="narrativeThread"></p>
     </div>
 
+    <!-- Fit analysis — two column Parker layout -->
     <div class="gap-analysis" id="gapAnalysis">
-      <p class="placeholder-text">This is where we tell you the truth about your fit. Complete Step 2 first.</p>
+      <p class="placeholder-text">Complete Step 2 first — your fit analysis will appear here.</p>
     </div>
 
-    <button class="btn-primary hidden" id="approveBtn" onclick="approveBrief()">Approved — build on this &#8594;</button>
+    <!-- Angle — left-border callout, surfaces after gap analysis -->
+    <div class="angle-callout hidden" id="angleCallout">
+      <p class="angle-eyebrow">Angle</p>
+      <p class="angle-text" id="angleText"></p>
+    </div>
+
+    <button class="btn-primary hidden" id="approveBtn" onclick="approveBrief()">This is my argument. Build on it &#8594;</button>
 
     <div class="loading hidden" id="loadingBullets">
       <div class="spinner"></div>
@@ -547,51 +589,24 @@
   </div>
 
   <!-- ═══════════════════════════════════════
-       STEP 4.5 — CHOOSE PATH
+       GENERATE SECTION — shown after Step 4
   ═══════════════════════════════════════ -->
-  <section class="step hidden" id="step45">
-    <div class="step-header">
-      <span class="step-eyebrow">Step 4.5</span>
-      <h2 class="step-title">Choose Path</h2>
-      <p class="step-subtitle">Confirm what we build — and how we open your cover letter.</p>
-    </div>
+  <div class="hidden" id="generateSection">
 
-    <!-- Asset confirmation — synced from Step 0 selection, still adjustable -->
-    <div class="field-group">
-      <label class="field-label">Building these assets</label>
-      <div class="asset-options" id="assetOptions">
-        <!-- Populated dynamically from Step 0 selection -->
-      </div>
-      <p class="hint-text">Change your mind? Adjust here.</p>
-    </div>
-
-    <div class="surface-notice hidden" id="storySurfaceNotice45">
-      No enrichment was added in Step 3.5. Your interview prep will be built from your CV alone — use the Edit button above to add context first, or continue with what you have.
-    </div>
-
-    <!-- Routing confirmation card — visible routing, pre-filled, user confirms -->
+    <!-- Routing confirmation — only if Cover Letter selected -->
     <div class="routing-card hidden" id="routingCard">
       <div class="routing-card-header">
-        <span class="routing-card-label">&#128270; Before we build — confirm the approach</span>
-        <p class="routing-card-sub">We've pre-selected based on your brief. Tap to change anything.</p>
+        <span class="routing-card-label">Before we build — confirm the approach</span>
+        <p class="routing-card-sub">Pre-selected from your brief. Tap to change anything.</p>
       </div>
-
-      <!-- Opening approach -->
       <div class="routing-section" id="routingOpeningSection">
         <p class="routing-section-title">How we open your cover letter</p>
-        <div class="routing-options" id="routingOpeningOptions">
-          <!-- Populated by JS from /api/routing -->
-        </div>
+        <div class="routing-options" id="routingOpeningOptions"></div>
       </div>
-
-      <!-- P3 connection -->
       <div class="routing-section" id="routingP3Section">
         <p class="routing-section-title">How we connect you to the company</p>
-        <div class="routing-options" id="routingP3Options">
-          <!-- Populated by JS from /api/routing -->
-        </div>
+        <div class="routing-options" id="routingP3Options"></div>
       </div>
-
       <div class="loading hidden" id="loadingRouting">
         <div class="spinner"></div>
         <div class="loading-content">
@@ -613,18 +628,6 @@
           <div class="stage-dot" id="gs2"></div>
           <div class="stage-dot" id="gs3"></div>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <div class="step-collapsed hidden" id="step45Collapsed">
-    <div class="collapsed-inner">
-      <div class="collapsed-left">
-        <span class="check-badge">&#10003;</span>
-        <div><span class="collapsed-eyebrow">Step 4.5</span><span class="collapsed-name">Choose Path</span></div>
-      </div>
-      <div class="collapsed-right">
-        <span class="collapsed-summary" id="step45Summary">Assets built</span>
       </div>
     </div>
   </div>
@@ -701,6 +704,7 @@
   </section>
 
 </main>
+</div><!-- end app-shell -->
 
 <script src="/static/app.js"></script>
 </body>
