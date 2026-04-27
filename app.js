@@ -53,20 +53,24 @@ const stepLabels = {
 };
 
 function updateProgress(step) {
-  [1,2,3,4,5].forEach((s, i) => {
-    const pip  = document.getElementById(`pip${s}`);
-    const line = document.getElementById(`line${s}`);
-    if (!pip) return;
-    const active = Math.ceil(step);
-    pip.className = 'step-pip ' + (s < active ? 'done' : s === active ? 'active' : 'todo');
-    pip.textContent = s < active ? '✓' : String(s);
-    if (line) line.className = 'pip-line ' + (s < active ? 'done' : '');
+  // Drive sidebar rail — maps step numbers to rail item IDs
+  const railMap = { 1: 'srail1', 2: 'srail2', 3: 'srail3', 3.5: 'srail35', 4: 'srail4', 4.25: 'srail4', 5: 'srail5' };
+  const stepOrder = [1, 2, 3, 3.5, 4, 5];
+  const currentIdx = stepOrder.indexOf(step) !== -1 ? stepOrder.indexOf(step) : stepOrder.findIndex(s => s >= step);
+
+  stepOrder.forEach((s, i) => {
+    const railId = railMap[s];
+    if (!railId) return;
+    const el = document.getElementById(railId);
+    if (!el) return;
+    if (i < currentIdx) {
+      el.className = 'sidebar-step done';
+    } else if (i === currentIdx) {
+      el.className = 'sidebar-step active';
+    } else {
+      el.className = 'sidebar-step todo';
+    }
   });
-  const el = document.getElementById('stepLabelText');
-  if (el) {
-    el.style.opacity = '0';
-    setTimeout(() => { el.textContent = stepLabels[step] || ''; el.style.opacity = '1'; }, 120);
-  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -232,14 +236,12 @@ function toggleFullPackage() {
 
   if (isSelected) {
     card.classList.remove('selected');
-    // Deselect all individual cards
-    document.querySelectorAll('.asset-select-card').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.asset-list-item').forEach(c => c.classList.remove('selected'));
     state.selectedAssets = [];
   } else {
     card.classList.add('selected');
-    // Select all individual cards
     const all = ['Cover Letter','Resume Bullets','Interview Prep','Cold Outreach Email','Answer Application Form'];
-    document.querySelectorAll('.asset-select-card').forEach(c => c.classList.add('selected'));
+    document.querySelectorAll('.asset-list-item').forEach(c => c.classList.add('selected'));
     state.selectedAssets = [...all];
   }
 
@@ -884,33 +886,91 @@ async function confirmPainPoints() {
 function renderGapAnalysis(text) {
   if (!text) return '';
 
-  // Try structured parsing first — backend outputs **Matches**, **Gaps**, etc.
-  const sectionPatterns = [
-    { label: 'Matches',  regex: /\*\*(?:Key )?Matches\*\*[\s\S]*?(?=\*\*|$)/ },
-    { label: 'Gaps',     regex: /\*\*(?:Experience )?Gaps\*\*[\s\S]*?(?=\*\*|$)/ },
-    { label: 'Angle',    regex: /\*\*(?:Strategic )?Angle\*\*[\s\S]*?(?=\*\*|$)/ },
-    { label: 'Evidence', regex: /\*\*Evidence[\s\S]*?\*\*[\s\S]*?(?=\*\*|$)/ },
-    { label: 'Advice',   regex: /\*\*(?:Application )?Advice\*\*[\s\S]*?(?=\*\*|$)/ },
-  ];
-
-  let parsed = false;
-  let html = '';
-  for (const { label, regex } of sectionPatterns) {
-    const match = text.match(regex);
-    if (match) {
-      parsed = true;
-      const content = match[0].replace(/\*\*[^*]+\*\*/, '').trim();
-      if (content) {
-        html += `<div class="gap-section">
-          <span class="gap-label">${label}</span>
-          <div class="gap-content">${md(content)}</div>
-        </div>`;
+  // Extract angle separately — surfaces in its own callout
+  const angleM = text.match(/\*\*(?:Strategic )?Angle\*\*\s*([\s\S]*?)(?=\*\*|$)/);
+  if (angleM) {
+    const angleText = angleM[1].replace(/\*\*[^*]+\*\*/, '').trim();
+    if (angleText) {
+      const callout = document.getElementById('angleCallout');
+      const angleEl = document.getElementById('angleText');
+      if (callout && angleEl) {
+        angleEl.textContent = angleText;
+        callout.classList.remove('hidden');
       }
     }
   }
 
-  // Fallback: render as markdown if parsing fails
-  return parsed ? html : `<div class="gap-content">${md(text)}</div>`;
+  // Extract matches and gaps for two-column table
+  const matchesM = text.match(/\*\*(?:Key )?Matches\*\*\s*([\s\S]*?)(?=\*\*|$)/);
+  const gapsM    = text.match(/\*\*(?:Experience )?Gaps\*\*\s*([\s\S]*?)(?=\*\*|$)/);
+  const evidenceM = text.match(/\*\*Evidence[\s\S]*?\*\*\s*([\s\S]*?)(?=\*\*|$)/);
+  const adviceM  = text.match(/\*\*(?:Application )?Advice\*\*\s*([\s\S]*?)(?=\*\*|$)/);
+
+  // Parse bullet items from matches and gaps
+  function parseItems(raw) {
+    if (!raw) return [];
+    return raw.split('\n')
+      .map(l => l.replace(/^[-•*]\s*/, '').replace(/\*\*([^*]+)\*\*/g, '$1').trim())
+      .filter(l => l.length > 5);
+  }
+
+  const matches = parseItems(matchesM ? matchesM[1] : '');
+  const gaps    = parseItems(gapsM    ? gapsM[1]    : '');
+
+  // If we have structured data, render two-column table
+  if (matches.length || gaps.length) {
+    const maxRows = Math.max(matches.length, gaps.length);
+    let rows = `
+      <div class="fit-table-row fit-table-header">
+        <div class="fit-col fit-col-need">What they need</div>
+        <div class="fit-col fit-col-bring">What you bring</div>
+      </div>`;
+
+    // Render matches as paired rows — need on left, evidence on right
+    matches.forEach((m, i) => {
+      rows += `
+        <div class="fit-table-row">
+          <div class="fit-col fit-col-need">${escHtml(m)}</div>
+          <div class="fit-col fit-col-bring">
+            <span class="fit-signal fit-match"></span>
+            <span>${escHtml(m)}</span>
+          </div>
+        </div>`;
+    });
+
+    // Render gaps
+    gaps.forEach(g => {
+      rows += `
+        <div class="fit-table-row">
+          <div class="fit-col fit-col-need">${escHtml(g)}</div>
+          <div class="fit-col fit-col-bring">
+            <span class="fit-signal fit-gap"></span>
+            <span class="fit-gap-text">${escHtml(g)}</span>
+          </div>
+        </div>`;
+    });
+
+    let html = `
+      <p class="fit-table-label">Fit analysis</p>
+      <div class="fit-table">${rows}</div>`;
+
+    // Evidence strength below table
+    if (evidenceM) {
+      const evText = evidenceM[1].replace(/\*\*[^*]+\*\*/g, '').trim();
+      if (evText) html += `<div class="fit-evidence">${md(evText)}</div>`;
+    }
+
+    // Advice below evidence
+    if (adviceM) {
+      const advText = adviceM[1].replace(/\*\*[^*]+\*\*/g, '').trim();
+      if (advText) html += `<div class="fit-advice">${md(advText)}</div>`;
+    }
+
+    return html;
+  }
+
+  // Fallback — render as markdown
+  return `<div class="gap-content">${md(text)}</div>`;
 }
 
 async function approveBrief() {
@@ -966,7 +1026,9 @@ async function approveBrief() {
 function renderBulletDiagnosisCards(raw) {
   if (!raw) return '';
 
-  const blocks = raw.split('---').map(b => b.trim()).filter(b => b.length > 20);
+  // Strip GAP_TYPE lines before parsing — internal field, never displayed
+  const cleaned = raw.replace(/^GAP_TYPE:.*$/gm, '').replace(/\n{3,}/g, '\n\n');
+  const blocks = cleaned.split('---').map(b => b.trim()).filter(b => b.length > 20);
   let html = `<p class="bullet-diag-eyebrow">Experiences selected for this role</p>`;
 
   let cardCount = 0;
@@ -1109,22 +1171,24 @@ async function proceedToChoosePath() {
   const referralName = val('referralName');
   state.applicationContext = {
     referral_name:    referralName,
-    company_stage:    state.brief.derived_company_stage    || '',
+    company_stage:    state.brief.derived_company_stage    || 'growing',
     career_situation: state.brief.derived_career_situation || 'growing',
   };
   state.brief.application_context = state.applicationContext;
 
-  // Populate Step 4.5 asset options from Step 0 selection
-  populateStep45Assets();
-
   collapseStep('step4', 'step4Collapsed');
-  activateStep('step45');
-  updateProgress(4.5);
 
-  const selected = state.selectedAssets.filter(a => a !== 'Answer Application Form');
+  // If Cover Letter selected, load routing options then show generate UI inline
+  const selected = state.selectedAssets;
   if (selected.includes('Cover Letter') || selected.length === 0) {
+    show('routingCard');
+    show('loadingRouting');
     await loadRoutingOptions();
   }
+
+  show('generateSection');
+  activateStep('step5');
+  updateProgress(5);
 }
 
 // Populate Step 4.5 asset checkboxes from Step 0 selection — user can still adjust
@@ -1323,8 +1387,6 @@ async function generateAssets() {
     hide('loadingGenerate');
     document.getElementById('generateBtn').disabled = false;
 
-    collapseStep('step45', 'step45Collapsed');
-    activateStep('step5');
     updateProgress(5);
 
     if (state.firstGenerate) {
