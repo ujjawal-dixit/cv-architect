@@ -24,57 +24,45 @@
 <!-- App shell: sidebar rail + main content -->
 <div class="app-shell">
 
-  <!-- LEFT RAIL — progress sidebar -->
+  <!-- LEFT RAIL — progress sidebar. Done steps are clickable to re-open -->
   <nav class="sidebar-rail" id="sidebarRail">
     <div class="sidebar-brand">Outreach Architect</div>
     <div class="sidebar-steps">
 
-      <div class="sidebar-step todo" id="srail1" data-step="1">
-        <div class="srail-indicator"></div>
-        <div class="srail-label">
-          <span class="srail-num">01</span>
-          <span class="srail-name">Your Story</span>
-        </div>
+      <div class="sidebar-step todo" id="srail1" data-step="1" onclick="sidebarStepClick(1)">
+        <span class="srail-num">01</span>
+        <div class="srail-label"><span class="srail-name">Your Story</span></div>
+        <div class="srail-check hidden">✓</div>
       </div>
 
-      <div class="sidebar-step todo" id="srail2" data-step="2">
-        <div class="srail-indicator"></div>
-        <div class="srail-label">
-          <span class="srail-num">02</span>
-          <span class="srail-name">Set Role</span>
-        </div>
+      <div class="sidebar-step todo" id="srail2" data-step="2" onclick="sidebarStepClick(2)">
+        <span class="srail-num">02</span>
+        <div class="srail-label"><span class="srail-name">Set Role</span></div>
+        <div class="srail-check hidden">✓</div>
       </div>
 
-      <div class="sidebar-step todo" id="srail3" data-step="3">
-        <div class="srail-indicator"></div>
-        <div class="srail-label">
-          <span class="srail-num">03</span>
-          <span class="srail-name">Read Truth</span>
-        </div>
+      <div class="sidebar-step todo" id="srail3" data-step="3" onclick="sidebarStepClick(3)">
+        <span class="srail-num">03</span>
+        <div class="srail-label"><span class="srail-name">Read Truth</span></div>
+        <div class="srail-check hidden">✓</div>
       </div>
 
-      <div class="sidebar-step todo" id="srail35" data-step="3.5">
-        <div class="srail-indicator"></div>
-        <div class="srail-label">
-          <span class="srail-num">03.5</span>
-          <span class="srail-name">Sharpen</span>
-        </div>
+      <div class="sidebar-step todo" id="srail35" data-step="3.5" onclick="sidebarStepClick(3.5)">
+        <span class="srail-num">03.5</span>
+        <div class="srail-label"><span class="srail-name">Sharpen</span></div>
+        <div class="srail-check hidden">✓</div>
       </div>
 
-      <div class="sidebar-step todo" id="srail4" data-step="4">
-        <div class="srail-indicator"></div>
-        <div class="srail-label">
-          <span class="srail-num">04</span>
-          <span class="srail-name">Your Voice</span>
-        </div>
+      <div class="sidebar-step todo" id="srail4" data-step="4" onclick="sidebarStepClick(4)">
+        <span class="srail-num">04</span>
+        <div class="srail-label"><span class="srail-name">Your Voice</span></div>
+        <div class="srail-check hidden">✓</div>
       </div>
 
-      <div class="sidebar-step todo" id="srail5" data-step="5">
-        <div class="srail-indicator"></div>
-        <div class="srail-label">
-          <span class="srail-num">05</span>
-          <span class="srail-name">Assets</span>
-        </div>
+      <div class="sidebar-step todo" id="srail5" data-step="5" onclick="sidebarStepClick(5)">
+        <span class="srail-num">05</span>
+        <div class="srail-label"><span class="srail-name">Assets</span></div>
+        <div class="srail-check hidden">✓</div>
       </div>
 
     </div>
@@ -100,57 +88,45 @@
       <p class="step-subtitle">Select what you need. We build only that.</p>
     </div>
 
-    <div class="asset-list" id="assetSelectGrid">
-
-      <div class="asset-list-item" data-asset="Cover Letter" onclick="toggleAssetCard(this)">
-        <div class="asset-list-body">
-          <span class="asset-list-name">Cover Letter</span>
-          <span class="asset-list-desc">Written from your profile for this job.</span>
-        </div>
-        <div class="asset-list-check"></div>
+    <!-- Row 1: 3 cards -->
+    <div class="asset-grid" id="assetSelectGrid">
+      <div class="asset-card" data-asset="Cover Letter" onclick="toggleAssetCard(this)">
+        <span class="asset-card-icon">✍️</span>
+        <span class="asset-card-name">Cover Letter</span>
+        <span class="asset-card-desc">Written from your profile for this job.</span>
       </div>
-
-      <div class="asset-list-item" data-asset="Resume Bullets" onclick="toggleAssetCard(this)">
-        <div class="asset-list-body">
-          <span class="asset-list-name">Resume Bullets</span>
-          <span class="asset-list-desc">Your bullets, rewritten to get selected.</span>
-        </div>
-        <div class="asset-list-check"></div>
+      <div class="asset-card" data-asset="Resume Bullets" onclick="toggleAssetCard(this)">
+        <span class="asset-card-icon">📋</span>
+        <span class="asset-card-name">Resume Bullets</span>
+        <span class="asset-card-desc">Your bullets, rewritten to get selected.</span>
       </div>
-
-      <div class="asset-list-item" data-asset="Interview Prep" onclick="toggleAssetCard(this)">
-        <div class="asset-list-body">
-          <span class="asset-list-name">Interview Prep</span>
-          <span class="asset-list-desc">The right questions. Your best answers.</span>
-        </div>
-        <div class="asset-list-check"></div>
+      <div class="asset-card" data-asset="Interview Prep" onclick="toggleAssetCard(this)">
+        <span class="asset-card-icon">🎯</span>
+        <span class="asset-card-name">Interview Prep</span>
+        <span class="asset-card-desc">The right questions. Your best answers.</span>
       </div>
-
-      <div class="asset-list-item" data-asset="Cold Outreach Email" onclick="toggleAssetCard(this)">
-        <div class="asset-list-body">
-          <span class="asset-list-name">Cold Outreach Email</span>
-          <span class="asset-list-desc">Email to grab a recruiter's attention.</span>
-        </div>
-        <div class="asset-list-check"></div>
-      </div>
-
-      <div class="asset-list-item" data-asset="Answer Application Form" onclick="toggleAssetCard(this)">
-        <div class="asset-list-body">
-          <span class="asset-list-name">Answer Application Form</span>
-          <span class="asset-list-desc">Personalised answers to application questions.</span>
-        </div>
-        <div class="asset-list-check"></div>
-      </div>
-
     </div>
-
+    <!-- Row 2: 2 cards -->
+    <div class="asset-grid-row2">
+      <div class="asset-card" data-asset="Cold Outreach Email" onclick="toggleAssetCard(this)">
+        <span class="asset-card-icon">📩</span>
+        <span class="asset-card-name">Cold Outreach Email</span>
+        <span class="asset-card-desc">Email to grab a recruiter's attention.</span>
+      </div>
+      <div class="asset-card" data-asset="Answer Application Form" onclick="toggleAssetCard(this)">
+        <span class="asset-card-icon">📝</span>
+        <span class="asset-card-name">Answer Application Form</span>
+        <span class="asset-card-desc">Personalised answers to your questions.</span>
+      </div>
+    </div>
+    <!-- Full package — full width below -->
     <div class="full-package-card" id="fullPackageCard" onclick="toggleFullPackage()">
       <div class="full-package-inner">
         <div class="full-package-body">
-          <span class="full-package-name">Full Application Package</span>
-          <span class="full-package-desc">Every asset, built from one brief.</span>
+          <span class="full-package-name">⭐ Full Application Package</span>
+          <span class="full-package-desc">Every asset, built from one brief. Nothing extra.</span>
         </div>
-        <div class="asset-list-check" id="fullPackageCheck"></div>
+        <div class="full-package-check" id="fullPackageCheck"></div>
       </div>
     </div>
 
