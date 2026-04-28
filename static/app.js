@@ -56,7 +56,6 @@ function updateProgress(step) {
   const railMap = { 1: 'srail1', 2: 'srail2', 3: 'srail3', 3.5: 'srail35', 4: 'srail4', 4.25: 'srail4', 5: 'srail5' };
   const stepOrder = [1, 2, 3, 3.5, 4, 5];
 
-  // step 0 = all todo; otherwise find current position
   let currentIdx = -1;
   if (step > 0) {
     currentIdx = stepOrder.indexOf(step) !== -1 ? stepOrder.indexOf(step) : stepOrder.findIndex(s => s >= step);
@@ -67,22 +66,61 @@ function updateProgress(step) {
     if (!railId) return;
     const el = document.getElementById(railId);
     if (!el) return;
-    // Preserve the data-step attribute class — only change state class
     const dataStep = el.getAttribute('data-step');
-    const baseClass = `sidebar-step`;
+
+    let stateClass;
     if (currentIdx === -1) {
-      el.className = `${baseClass} todo`;
+      stateClass = 'todo';
     } else if (i < currentIdx) {
-      el.className = `${baseClass} done`;
+      stateClass = 'done';
     } else if (i === currentIdx) {
-      el.className = `${baseClass} active`;
+      stateClass = 'active';
     } else {
-      el.className = `${baseClass} todo`;
+      stateClass = 'todo';
     }
-    // Restore data-step so CSS identity colours work
+
+    el.className = `sidebar-step ${stateClass}`;
     el.setAttribute('data-step', dataStep);
+
+    // Show/hide checkmark
+    const check = el.querySelector('.srail-check');
+    if (check) {
+      if (stateClass === 'done') check.classList.remove('hidden');
+      else check.classList.add('hidden');
+    }
   });
 }
+// Sidebar step click — re-opens a completed step
+function sidebarStepClick(step) {
+  const stepMap = {
+    1: { stepId:'step1', collapsedId:'step1Collapsed' },
+    2: { stepId:'step2', collapsedId:'step2Collapsed' },
+    3: { stepId:'step3', collapsedId:'step3Collapsed' },
+    3.5: { stepId:'step35', collapsedId:'step35Collapsed' },
+    4: { stepId:'step4', collapsedId:'step4Collapsed' },
+    5: { stepId:'step5', collapsedId:null },
+  };
+  const map = stepMap[step];
+  if (!map) return;
+
+  // Only clickable if done
+  const railEl = document.getElementById('srail' + String(step).replace('.',''));
+  if (!railEl || !railEl.classList.contains('done')) return;
+
+  // Re-open the step
+  if (map.collapsedId) editStep(map.stepId, map.collapsedId);
+  else {
+    show(map.stepId);
+    activateStep(map.stepId);
+  }
+  // Scroll to step
+  setTimeout(() => {
+    const el = document.getElementById(map.stepId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const show = id => { const e = document.getElementById(id); if (e) e.classList.remove('hidden'); };
@@ -244,15 +282,17 @@ function toggleAssetCard(card) {
 function toggleFullPackage() {
   const card = document.getElementById('fullPackageCard');
   const isSelected = card.classList.contains('selected');
+  const all = ['Cover Letter','Resume Bullets','Interview Prep','Cold Outreach Email','Answer Application Form'];
 
   if (isSelected) {
     card.classList.remove('selected');
-    document.querySelectorAll('.asset-list-item').forEach(c => c.classList.remove('selected'));
+    // Deselect all cards (both old list and new grid classes)
+    document.querySelectorAll('.asset-list-item, .asset-card').forEach(c => c.classList.remove('selected'));
     state.selectedAssets = [];
   } else {
     card.classList.add('selected');
-    const all = ['Cover Letter','Resume Bullets','Interview Prep','Cold Outreach Email','Answer Application Form'];
-    document.querySelectorAll('.asset-list-item').forEach(c => c.classList.add('selected'));
+    // Select all cards
+    document.querySelectorAll('.asset-list-item, .asset-card').forEach(c => c.classList.add('selected'));
     state.selectedAssets = [...all];
   }
 
