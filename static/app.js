@@ -262,19 +262,29 @@ const ASSET_NUDGES = {
 };
 
 function toggleAssetCard(card) {
-  const asset = card.dataset.asset;
-  const isSelected = card.classList.contains('selected');
+  // Walk up from the clicked target to the .asset-card element
+  // (guards against a child span intercepting the event)
+  const target = card.closest ? card.closest('.asset-card') : card;
+  if (!target) return;
+
+  const asset = target.dataset.asset;
+  if (!asset) return;
+
+  const isSelected = target.classList.contains('selected');
 
   if (isSelected) {
-    card.classList.remove('selected');
+    target.classList.remove('selected');
     state.selectedAssets = state.selectedAssets.filter(a => a !== asset);
   } else {
-    card.classList.add('selected');
+    target.classList.add('selected');
     if (!state.selectedAssets.includes(asset)) state.selectedAssets.push(asset);
   }
 
   // Deselect Full Package if individual cards are touched
   document.getElementById('fullPackageCard')?.classList.remove('selected');
+
+  updateAssetNudge();
+}
 
   updateAssetNudge();
 }
