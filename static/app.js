@@ -345,6 +345,22 @@ function completeStep0() {
   });
   state.flowNeeds = needs;
 
+  // Persist selection summary in hero area so it's always visible
+  const summary = state.selectedAssets.join(' · ');
+  const heroEl = document.querySelector('.hero');
+  if (heroEl) {
+    const existing = document.getElementById('step0SelectedSummary');
+    if (!existing) {
+      const tag = document.createElement('p');
+      tag.id = 'step0SelectedSummary';
+      tag.style.cssText = 'font-family:var(--font-ui);font-size:11px;color:var(--text4);margin-top:6px;letter-spacing:0.04em;';
+      tag.textContent = `Building: ${summary}`;
+      heroEl.appendChild(tag);
+    } else {
+      existing.textContent = `Building: ${summary}`;
+    }
+  }
+
   // Collapse Step 0, show Step 1
   hide('step0');
   activateStep('step1');
@@ -639,7 +655,7 @@ async function completeStep1() {
   // Extract name from first short alphabetic line
   const lines = cv.split('\n').map(l => l.trim()).filter(l => l.length > 1);
   const nameLine = lines.find(l => l.length < 60 && /^[A-Za-z\s\.\-\']+$/.test(l)) || '';
-  setText('step1Summary', nameLine.length > 2 ? `Story of ${nameLine}` : 'Story loaded');
+  setText('step1Summary', nameLine.length > 2 ? nameLine : 'CV loaded');
 
   collapseStep('step1', 'step1Collapsed');
   activateStep('step2');
@@ -660,7 +676,7 @@ async function completeStep1() {
       // Update name in collapsed card from parsed CV if available
       const parsedName = data.parsed_cv.candidate_name;
       if (parsedName && parsedName !== 'NONE' && parsedName.length > 2) {
-        setText('step1Summary', `Story of ${parsedName}`);
+        setText('step1Summary', parsedName);
         state.brief.candidate_name = parsedName;
       }
     }
@@ -694,12 +710,21 @@ async function runResearch() {
     jd = previewText || state.jdText;
   }
 
-  // Validate JD input
-  if (!jd || jd.length < 30) {
-    showToast('Please add the job description before continuing.');
-    return;
+  // Validate JD input — allow role+company only flow with explicit warning
+  const isRoleOnly = !jd || jd.length < 30;
+  if (isRoleOnly) {
+    const company = val('manualCompany').trim();
+    if (!company) {
+      showToast('Enter the company name and role — or paste the full job description.');
+      return;
+    }
+    // Warn clearly, then construct a minimal JD stub so the pipeline can proceed
+    showToast('No JD — building from company research only. Outputs will be less targeted.');
+    const roleField = document.getElementById('manualCompany');
+    jd = `Role: ${company}. No job description provided. Build entirely from company research and candidate CV.`;
+    state.brief.jd_thin = true;  // flag for downstream prompts
   }
-  if (jd.startsWith('%PDF') || jd.includes('endobj')) {
+  if (!isRoleOnly && (jd.startsWith('%PDF') || jd.includes('endobj'))) {
     showToast('This looks like a raw PDF — please use the upload button or paste the text.');
     return;
   }
@@ -937,7 +962,7 @@ async function confirmPainPoints() {
 function renderGapAnalysis(text) {
   if (!text) return '';
 
-  // Extract angle separately — surfaces in its own callout
+  // Extract angle separately
   const angleM = text.match(/\*\*(?:Strategic )?Angle\*\*\s*([\s\S]*?)(?=\*\*|$)/);
   if (angleM) {
     const angleText = angleM[1].replace(/\*\*[^*]+\*\*/, '').trim();
@@ -951,67 +976,110 @@ function renderGapAnalysis(text) {
     }
   }
 
-  // Extract matches and gaps for two-column table
-  const matchesM = text.match(/\*\*(?:Key )?Matches\*\*\s*([\s\S]*?)(?=\*\*|$)/);
+  // Parse NEED/BRING paired format from **Matches** section
+  const matchesM = text.match(/\*\*(?:Key )?Matches\*\*\s*([\s\S]*?)(?=\*\*(?:Gaps|Experience)|$)/);
   const gapsM    = text.match(/\*\*(?:Experience )?Gaps\*\*\s*([\s\S]*?)(?=\*\*|$)/);
-  const evidenceM = text.match(/\*\*Evidence[\s\S]*?\*\*\s*([\s\S]*?)(?=\*\*|$)/);
+  const evidenceM = text.match(/\*\*Evidence[^*]*\*\*\s*([\s\S]*?)(?=\*\*|$)/);
   const adviceM  = text.match(/\*\*(?:Application )?Advice\*\*\s*([\s\S]*?)(?=\*\*|$)/);
 
-  // Parse bullet items from matches and gaps
-  function parseItems(raw) {
+  // Parse NEED/BRING pairs from a section of text
+  function parsePairs(raw) {
+    if (!raw) return [];
+    const pairs = [];
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+    let currentNeed = '';
+    lines.forEach(line => {
+      if (line.startsWith('NEED:')) {
+        currentNeed = line.replace(/^NEED:\s*/, '').replace(/\*\*([^*]+)\*\*/g, '$1').trim();
+      } else if (line.startsWith('BRING:') && currentNeed) {
+        const bring = line.replace(/^BRING:\s*/, '').replace(/\*\*([^*]+)\*\*/g, '$1').trim();
+        if (currentNeed && bring) pairs.push({ need: currentNeed, bring });
+        currentNeed = '';
+      }
+    });
+    return pairs;
+  }
+
+  // Fallback: parse old bullet format if NEED/BRING not found
+  function parseBullets(raw) {
     if (!raw) return [];
     return raw.split('\n')
       .map(l => l.replace(/^[-•*]\s*/, '').replace(/\*\*([^*]+)\*\*/g, '$1').trim())
       .filter(l => l.length > 5);
   }
 
-  const matches = parseItems(matchesM ? matchesM[1] : '');
-  const gaps    = parseItems(gapsM    ? gapsM[1]    : '');
+  const matchPairs = parsePairs(matchesM ? matchesM[1] : '');
+  const gapPairs   = parsePairs(gapsM    ? gapsM[1]    : '');
 
-  // If we have structured data, render two-column table
-  if (matches.length || gaps.length) {
-    const maxRows = Math.max(matches.length, gaps.length);
+  // Fallback to old bullet format if new format not found
+  const matchBullets = matchPairs.length === 0 ? parseBullets(matchesM ? matchesM[1] : '') : [];
+  const gapBullets   = gapPairs.length === 0   ? parseBullets(gapsM    ? gapsM[1]    : '') : [];
+
+  const hasStructured = matchPairs.length > 0 || gapPairs.length > 0;
+  const hasFallback   = matchBullets.length > 0 || gapBullets.length > 0;
+
+  if (hasStructured || hasFallback) {
     let rows = `
       <div class="fit-table-row fit-table-header">
         <div class="fit-col fit-col-need">What they need</div>
         <div class="fit-col fit-col-bring">What you bring</div>
       </div>`;
 
-    // Render matches as paired rows — need on left, evidence on right
-    matches.forEach((m, i) => {
-      rows += `
-        <div class="fit-table-row">
-          <div class="fit-col fit-col-need">${escHtml(m)}</div>
-          <div class="fit-col fit-col-bring">
-            <span class="fit-signal fit-match"></span>
-            <span>${escHtml(m)}</span>
-          </div>
-        </div>`;
-    });
-
-    // Render gaps
-    gaps.forEach(g => {
-      rows += `
-        <div class="fit-table-row">
-          <div class="fit-col fit-col-need">${escHtml(g)}</div>
-          <div class="fit-col fit-col-bring">
-            <span class="fit-signal fit-gap"></span>
-            <span class="fit-gap-text">${escHtml(g)}</span>
-          </div>
-        </div>`;
-    });
+    if (hasStructured) {
+      // Render matched NEED/BRING pairs — genuinely distinct left and right
+      matchPairs.forEach(pair => {
+        rows += `
+          <div class="fit-table-row">
+            <div class="fit-col fit-col-need">${escHtml(pair.need)}</div>
+            <div class="fit-col fit-col-bring">
+              <span class="fit-signal fit-match"></span>
+              <span>${escHtml(pair.bring)}</span>
+            </div>
+          </div>`;
+      });
+      gapPairs.forEach(pair => {
+        if (pair.bring === 'NONE' || pair.bring.toLowerCase() === 'none') return;
+        rows += `
+          <div class="fit-table-row">
+            <div class="fit-col fit-col-need">${escHtml(pair.need)}</div>
+            <div class="fit-col fit-col-bring">
+              <span class="fit-signal fit-gap"></span>
+              <span class="fit-gap-text">${escHtml(pair.bring)}</span>
+            </div>
+          </div>`;
+      });
+    } else {
+      // Fallback: old bullet format — show same text in both columns (known limitation)
+      matchBullets.forEach(m => {
+        rows += `
+          <div class="fit-table-row">
+            <div class="fit-col fit-col-need">${escHtml(m)}</div>
+            <div class="fit-col fit-col-bring">
+              <span class="fit-signal fit-match"></span>
+              <span>${escHtml(m)}</span>
+            </div>
+          </div>`;
+      });
+      gapBullets.forEach(g => {
+        rows += `
+          <div class="fit-table-row">
+            <div class="fit-col fit-col-need">${escHtml(g)}</div>
+            <div class="fit-col fit-col-bring">
+              <span class="fit-signal fit-gap"></span>
+              <span class="fit-gap-text">${escHtml(g)}</span>
+            </div>
+          </div>`;
+      });
+    }
 
     let html = `
       <p class="fit-table-label">Fit analysis</p>
       <div class="fit-table">${rows}</div>`;
 
-    // Evidence strength below table
     if (evidenceM) {
       const evText = evidenceM[1].replace(/\*\*[^*]+\*\*/g, '').trim();
       if (evText) html += `<div class="fit-evidence">${md(evText)}</div>`;
     }
-
-    // Advice below evidence
     if (adviceM) {
       const advText = adviceM[1].replace(/\*\*[^*]+\*\*/g, '').trim();
       if (advText) html += `<div class="fit-advice">${md(advText)}</div>`;
@@ -1020,7 +1088,7 @@ function renderGapAnalysis(text) {
     return html;
   }
 
-  // Fallback — render as markdown
+  // Final fallback — raw markdown
   return `<div class="gap-content">${md(text)}</div>`;
 }
 
@@ -1084,11 +1152,11 @@ function renderBulletDiagnosisCards(raw) {
 
   let cardCount = 0;
   blocks.forEach(block => {
-    const roleM       = block.match(/ROLE:\s*(.+?)(?=\n|$)/);
-    const bulletM     = block.match(/BULLET:\s*(.+?)(?=\nSERVES:|(?=\nRELEVANCE:)|$)/s);
-    const relevanceM  = block.match(/RELEVANCE:\s*(.+?)(?=\nVERDICT:|$)/s);
-    const verdictM    = block.match(/VERDICT:\s*(\w+)/);
-    const questionsM  = block.match(/QUESTIONS:\s*(.+?)(?=\n---|$)/s);
+    const roleM       = block.match(/ROLE:\s*(.+?)(?=\n|$)/i);
+    const bulletM     = block.match(/BULLET:\s*(.+?)(?=\nSERVES:|(?=\nRELEVANCE:)|$)/si);
+    const relevanceM  = block.match(/RELEVANCE:\s*(.+?)(?=\nVERDICT:|$)/si);
+    const verdictM    = block.match(/VERDICT:\s*(\w+)/i);
+    const questionsM  = block.match(/QUESTIONS:\s*(.+?)(?=\n---|$)/si);
 
     const role      = roleM      ? roleM[1].trim()      : '';
     const bullet    = bulletM    ? bulletM[1].trim().replace(/\n/g,' ') : '';
@@ -1373,7 +1441,11 @@ function renderRoutingOptions(containerId, options, selectedId, onSelect) {
 }
 
 async function generateAssets() {
-  const selected = getSelectedAssets();
+  // Read from state — the single source of truth set at Step 0.
+  // getSelectedAssets() reads DOM checkboxes from Step 4.5 which no longer exists.
+  const selected = state.selectedAssets.length > 0
+    ? state.selectedAssets
+    : getSelectedAssets();
   if (selected.length === 0) { showToast('Please select at least one asset.'); return; }
 
   state.selectedAssets = selected;
@@ -1804,14 +1876,14 @@ function renderEmailHTML(text, evalData) {
 function renderInterviewHTML(text, evalData) {
   if (!text) return '<p style="color:var(--text3);">Interview prep generating…</p>';
 
-  // Split on the section headers using the ━ divider pattern
-  const sectionPattern = /━{10,}\n(.*?)\n━{10,}/g;
   let sections = [];
+
+  // Strategy 1: ━ divider pattern (preferred — matches backend prompt format)
+  const sectionPattern = /━{5,}\n(.*?)\n━{5,}/g;
   let lastIndex = 0;
   let match;
-
   while ((match = sectionPattern.exec(text)) !== null) {
-    if (lastIndex > 0 && sections.length > 0) {
+    if (sections.length > 0) {
       sections[sections.length - 1].body = text.slice(lastIndex, match.index).trim();
     }
     sections.push({ title: match[1].trim(), body: '', start: match.index + match[0].length });
@@ -1821,12 +1893,31 @@ function renderInterviewHTML(text, evalData) {
     sections[sections.length - 1].body = text.slice(lastIndex).trim();
   }
 
-  // Fallback — if no section dividers found, use ** headers
+  // Strategy 2: SECTION N — TITLE pattern (common Groq fallback)
+  if (sections.length === 0) {
+    const sectionHeaderPattern = /^(SECTION \d+[^:\n]*|#{1,3}\s+.+)$/gm;
+    const headerMatches = [...text.matchAll(sectionHeaderPattern)];
+    headerMatches.forEach((hm, i) => {
+      const start = hm.index + hm[0].length;
+      const end   = headerMatches[i + 1]?.index ?? text.length;
+      sections.push({
+        title: hm[1].replace(/^#+\s*/, '').replace(/^SECTION \d+ — /, '').trim(),
+        body:  text.slice(start, end).trim(),
+      });
+    });
+  }
+
+  // Strategy 3: **Header** pattern
   if (sections.length === 0) {
     const parts = text.split(/\*\*(.+?)\*\*/g);
     for (let i = 1; i < parts.length; i += 2) {
-      sections.push({ title: parts[i].trim(), body: (parts[i+1] || '').trim() });
+      sections.push({ title: parts[i].trim(), body: (parts[i + 1] || '').trim() });
     }
+  }
+
+  // Strategy 4: last resort — treat whole text as one section
+  if (sections.length === 0) {
+    sections = [{ title: 'Interview Preparation', body: text.trim() }];
   }
 
   let html = '';
