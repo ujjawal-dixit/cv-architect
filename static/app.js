@@ -1930,16 +1930,17 @@ function renderInterviewHTML(text, evalData) {
 
     const body = section.body;
 
-    // Q&A section — parse Q: / WHAT THEY ARE ACTUALLY EVALUATING: / HOW TO THINK: / YOUR STRONGEST EVIDENCE: / WHAT TO AVOID:
+    // Q&A section — flexible regex handles both exact prompt labels and LLM abbreviations
     if (title.includes('LIKELY QUESTIONS') || title.includes('Likely Questions') || title.includes('Questions')) {
       // Split on Q: markers
       const qBlocks = body.split(/(?=^Q:)/m).filter(b => b.trim());
       qBlocks.forEach(block => {
         const qM    = block.match(/^Q:\s*(.+?)(?=\n|$)/);
-        const evalM = block.match(/WHAT THEY ARE ACTUALLY EVALUATING:\s*(.+?)(?=\nHOW TO|$)/s);
-        const howM  = block.match(/HOW TO THINK[^:]*:\s*(.+?)(?=\nYOUR STRONGEST|$)/s);
-        const evM   = block.match(/YOUR STRONGEST EVIDENCE[^:]*:\s*(.+?)(?=\nWHAT TO AVOID|$)/s);
-        const avM   = block.match(/WHAT TO AVOID:\s*(.+?)(?=\n\n|$)/s);
+        // Each field: matches exact prompt label OR common LLM abbreviation
+        const evalM = block.match(/(?:WHAT THEY ARE ACTUALLY EVALUATING|What they(?:'re| are) evaluating)[:\s]+(.+?)(?=\n(?:HOW TO|How to)|$)/si);
+        const howM  = block.match(/(?:HOW TO THINK[^:]*|How to think[^:]*)[:\s]+(.+?)(?=\n(?:YOUR STRONGEST|Your (?:strongest |evidence))|$)/si);
+        const evM   = block.match(/(?:YOUR STRONGEST EVIDENCE[^:]*|Your (?:strongest )?evidence)[:\s]+(.+?)(?=\n(?:WHAT TO AVOID|What to avoid)|$)/si);
+        const avM   = block.match(/(?:WHAT TO AVOID|What to avoid)[:\s]+(.+?)(?=\n\n|$)/si);
 
         if (!qM) return;
 
@@ -1971,14 +1972,16 @@ function renderInterviewHTML(text, evalData) {
 
         html += `</div>`;
       });
-
-    } else if (title.includes('HARD QUESTIONS') || title.includes('Hard Questions')) {
-      const qBlocks = body.split(/(?=THE QUESTION:)/m).filter(b => b.trim());
-      qBlocks.forEach(block => {
-        const qM   = block.match(/THE QUESTION:\s*(.+?)(?=\nWHY IT IS|$)/s);
-        const whyM = block.match(/WHY IT IS HARD:\s*(.+?)(?=\nHOW TO|$)/s);
-        const howM = block.match(/HOW TO HANDLE IT:\s*(.+?)(?=\nWHAT NOT|$)/s);
-        const notM = block.match(/WHAT NOT TO SAY:\s*(.+?)(?=\n\n|$)/s);
+    } else if (title.includes('HARD QUESTIONS') || title.includes('Hard Questions') || title.includes('Hard')) {
+      // Flexible split: handles THE QUESTION: or The question: or Q: in hard section
+      const qBlocks = body.split(/(?=(?:THE QUESTION|The question)[:\s])/im).filter(b => b.trim());
+      // Fallback: if no blocks, treat whole body as one block
+      const hardBlocks = qBlocks.length > 0 ? qBlocks : [body];
+      hardBlocks.forEach(block => {
+        const qM   = block.match(/(?:THE QUESTION|The question)[:\s]+(.+?)(?=\n(?:WHY IT IS|Why it|WHY IT'S)|$)/si);
+        const whyM = block.match(/(?:WHY IT IS HARD|Why it(?:'s| is) hard)[:\s]+(.+?)(?=\n(?:HOW TO HANDLE|How to handle)|$)/si);
+        const howM = block.match(/(?:HOW TO HANDLE IT|How to handle it)[:\s]+(.+?)(?=\n(?:WHAT NOT|What not)|$)/si);
+        const notM = block.match(/(?:WHAT NOT TO SAY|What not to say)[:\s]+(.+?)(?=\n\n|$)/si);
 
         if (!qM) return;
 
@@ -2006,11 +2009,11 @@ function renderInterviewHTML(text, evalData) {
         html += `</div>`;
       });
 
-    } else if (title.includes('QUESTIONS TO ASK') || title.includes('Questions to Ask')) {
+    } else if (title.includes('QUESTIONS TO ASK') || title.includes('Questions to Ask') || title.includes('Ask Them') || title.includes('Ask the')) {
       const qBlocks = body.split(/(?=^Q:)/m).filter(b => b.trim());
       qBlocks.forEach(block => {
-        const qM   = block.match(/^Q:\s*(.+?)(?=\nWHY|$)/s);
-        const whyM = block.match(/WHY THIS WORKS:\s*(.+?)(?=\n\n|$)/s);
+        const qM   = block.match(/^Q:\s*(.+?)(?=\n(?:WHY THIS WORKS|Why this works)|$)/si);
+        const whyM = block.match(/(?:WHY THIS WORKS|Why this works)[:\s]+(.+?)(?=\n\n|$)/si);
         if (!qM) return;
         html += `<div class="interview-qa">
           <div class="interview-q">
@@ -2023,25 +2026,62 @@ function renderInterviewHTML(text, evalData) {
           </div>` : ''}
         </div>`;
       });
+        </div>`;
+      });
 
     } else {
-      // Generic section — render as readable paragraphs
-      const lines = body.split('\n').map(l => l.trim()).filter(Boolean);
-      lines.forEach(line => {
-        if (line.startsWith('THE POINT:') || line.startsWith('EVIDENCE:') || line.startsWith('NATURAL MOMENT:')) {
-          const [label, ...rest] = line.split(':');
+      // Generic section — handles Section 1 (First 4 Minutes), Section 5 (Closing), Note on Preparation
+      // Detect YOUR X NON-NEGOTIABLES block and render as cards
+      const nonNegM = body.match(/YOUR \d+ NON-NEGOTIABLES?[:\s]*([\s\S]+)/i);
+      if (nonNegM) {
+        // Render the opening statement first if present
+        const openM = body.match(/OPENING STATEMENT[:\s]*([\s\S]+?)(?=YOUR \d+ NON|$)/i);
+        if (openM) {
           html += `<div class="interview-field">
-            <span class="interview-field-label">${escHtml(label)}</span>
-            <span class="interview-field-value">${safeText(rest.join(':').trim())}</span>
+            <span class="interview-field-label">Opening statement</span>
+            <span class="interview-field-value">${safeText(openM[1].trim())}</span>
           </div>`;
-        } else if (line.startsWith('- ') || line.startsWith('• ')) {
-          html += `<div class="interview-bullet">${safeText(line.slice(2))}</div>`;
-        } else if (line.startsWith('"') || line.startsWith('"')) {
-          html += `<blockquote class="interview-quote">${safeText(line)}</blockquote>`;
-        } else {
-          html += `<p class="interview-para">${safeText(line)}</p>`;
         }
-      });
+        // Split non-negotiables into individual items
+        const nonNegBody = nonNegM[1];
+        const items = nonNegBody.split(/\n(?=(?:THE POINT|EVIDENCE|NATURAL MOMENT)[:\s])/i).filter(s => s.trim());
+        items.forEach(item => {
+          const pointM  = item.match(/(?:THE POINT|The point)[:\s]+(.+?)(?=\n(?:EVIDENCE|Your evidence)|$)/si);
+          const evidM   = item.match(/(?:EVIDENCE|Your evidence)[:\s]+(.+?)(?=\n(?:NATURAL MOMENT|Natural moment)|$)/si);
+          const momentM = item.match(/(?:NATURAL MOMENT|Natural moment)[:\s]+(.+?)(?=\n\n|$)/si);
+          if (!pointM && !evidM && !momentM) {
+            // Fallback — render as paragraph
+            if (item.trim()) html += `<p class="interview-para">${safeText(item.trim())}</p>`;
+            return;
+          }
+          html += `<div class="interview-qa">`;
+          if (pointM) html += `<div class="interview-field"><span class="interview-field-label">The point</span><span class="interview-field-value">${safeText(pointM[1].trim())}</span></div>`;
+          if (evidM)  html += `<div class="interview-field interview-field-evidence"><span class="interview-field-label">Evidence</span><span class="interview-field-value">${safeText(evidM[1].trim())}</span></div>`;
+          if (momentM)html += `<div class="interview-field"><span class="interview-field-label">Natural moment</span><span class="interview-field-value">${safeText(momentM[1].trim())}</span></div>`;
+          html += `</div>`;
+        });
+      } else {
+        // Plain prose section — render paragraphs and labeled fields
+        const lines = body.split('\n').map(l => l.trim()).filter(Boolean);
+        // Detect labelled field lines: ALL CAPS: or Title Case: at start of line
+        const labeledFieldPattern = /^([A-Z][A-Z\s]+|[A-Z][a-z]+(?: [A-Z][a-z]+)*)[:\s]+(.+)/;
+        const knownLabels = /^(OPENING STATEMENT|THE POINT|EVIDENCE|NATURAL MOMENT|YOUR \d+ NON)/i;
+        lines.forEach(line => {
+          const labeled = line.match(labeledFieldPattern);
+          if (labeled && knownLabels.test(line)) {
+            html += `<div class="interview-field">
+              <span class="interview-field-label">${escHtml(labeled[1].toLowerCase().replace(/\b\w/g, c => c.toUpperCase()))}</span>
+              <span class="interview-field-value">${safeText(labeled[2].trim())}</span>
+            </div>`;
+          } else if (line.startsWith('- ') || line.startsWith('• ')) {
+            html += `<div class="interview-bullet">${safeText(line.slice(2))}</div>`;
+          } else if (line.startsWith('"') || line.startsWith('\u201c')) {
+            html += `<blockquote class="interview-quote">${safeText(line)}</blockquote>`;
+          } else {
+            html += `<p class="interview-para">${safeText(line)}</p>`;
+          }
+        });
+      }
     }
 
     html += `</div></div>`;
@@ -2099,7 +2139,7 @@ function buildEvalBlock(evalData) {
     return `<span class="eval-pill ${cls}">${label} ${score}/10</span>`;
   };
   return `<div class="eval-block">
-    <div class="eval-scores">${pill('Specificity', evalData.specificity_score)}${pill('Alignment', evalData.alignment_score)}</div>
+    <div class="eval-scores">${pill('Specificity', evalData.specificity_score)}${evalData.specificity_score && evalData.alignment_score ? '<span style="display:inline-block;width:6px;"></span>' : ''}${pill('Alignment', evalData.alignment_score)}</div>
     ${evalData.one_line_verdict ? `<p class="eval-verdict">${escHtml(evalData.one_line_verdict)}</p>` : ''}
     ${evalData.suggested_refinement && !['NONE NEEDED','NONE'].includes(evalData.suggested_refinement)
       ? `<p class="eval-suggestion">↳ ${escHtml(evalData.suggested_refinement)}</p>` : ''}
