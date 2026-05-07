@@ -1294,40 +1294,54 @@ TONE_DIRECTION: [specific voice guidance based on candidate's words and situatio
             f"""{LEVEL_1}
 
 YOUR TASK:
-Produce an honest gap analysis for this application.
+Produce an honest, two-column fit analysis for this application.
+
+CRITICAL: Each match row must have TWO genuinely different halves:
+- NEED: what the company requires — stated as a requirement, from the company's perspective
+- BRING: what the candidate actually demonstrates — stated as evidence, from the candidate's perspective with specific proof
+
+These must NOT be the same sentence rephrased. NEED is a requirement. BRING is proof.
+Example of WRONG (same idea, different words):
+  NEED: Experience leading cross-functional teams
+  BRING: Experience leading cross-functional teams at scale
+Example of RIGHT (requirement vs evidence):
+  NEED: Ability to lead cross-functional teams across product and engineering
+  BRING: Led 7-person teams across eng, design, and marketing — shipped 3 features in Q2 2024
 
 Be precise. Be honest. Do not soften genuine gaps.
-Do not inflate genuine strengths beyond what the evidence supports.
-The candidate reads this before approving the brief.
-They need the truth, not reassurance.
+The candidate reads this before approving. They need truth, not reassurance.
 
 Pain points: {pain_str}
 Strategic angle: {brief.get('strategic_angle','')}
 Narrative thread: {brief.get('narrative_thread','')}
-Gaps identified: {brief.get('gaps_to_address','')}
+Gaps to address: {brief.get('gaps_to_address','')}
 CV evidence:
 {cv_summary[:1500]}
 JD: {brief.get('jd_text','')[:1200]}
 
-Output:
+Output format — use EXACTLY this structure, no deviations:
+
 **Matches**
-- [match 1 — specific, not generic]
-- [match 2]
-- [match 3]
+NEED: [company requirement — one sentence]
+BRING: [candidate evidence — one sentence with specific proof from CV]
+NEED: [next requirement]
+BRING: [next evidence]
+NEED: [next requirement]
+BRING: [next evidence]
 
 **Gaps**
-- [gap 1 — honest, one line]
-- [gap 2 — or NONE if no real gaps]
+NEED: [what the company requires that the candidate lacks]
+BRING: [honest acknowledgement — or NONE if genuinely no gaps]
 
 **Angle**
 One sentence — the argument this application makes.
 
 **Evidence strength**
-For each pain point selected: Strong / Moderate / Weak — one line each.
+For each pain point: Strong / Moderate / Weak — one line each.
 
 **Application advice**
 1-2 sentences. Honest. Specific to this candidate and role.""",
-            max_tokens=600, quality="high"
+            max_tokens=700, quality="high"
         )
     except Exception as e:
         err = str(e)
@@ -1644,7 +1658,7 @@ Half a sentence to name it. One sentence to reframe it. Move on.
 Place it where it fits the flow — do not make it the focus."""
 
     # Stage register — derived from research
-    company_stage = brief.get('company_stage_derived', '')
+    company_stage = brief.get('derived_company_stage', brief.get('company_stage_derived', ''))
     stage_note = ""
     if company_stage == 'early_startup':
         stage_note = "REGISTER: Early-stage company. Direct, less formal. Peer conversation. Emphasis on ownership and building."
