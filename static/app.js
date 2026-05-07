@@ -286,9 +286,6 @@ function toggleAssetCard(card) {
   updateAssetNudge();
 }
 
-  updateAssetNudge();
-}
-
 function toggleFullPackage() {
   const card = document.getElementById('fullPackageCard');
   const isSelected = card.classList.contains('selected');
@@ -2034,8 +2031,6 @@ function renderInterviewHTML(text, evalData) {
             <span class="interview-field-label">Why this works</span>
             <span class="interview-field-value">${safeText(whyM[1].trim())}</span>
           </div>` : ''}
-        </div>`;
-      });
         </div>`;
       });
 
