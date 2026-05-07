@@ -567,6 +567,104 @@ body {
 .asset-output-plain { font-family:var(--font-ui); font-size:14px; color:var(--text); line-height:1.75; white-space:pre-wrap; }
 .eval-row { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
 .eval-badge { display:flex; align-items:center; gap:5px; font-family:var(--font-ui); font-size:11px; font-weight:500; padding:4px 10px; border-radius:12px; border:0.5px solid var(--border); background:var(--card-raised); color:var(--text3); }
+
+/* ── Eval block — scores + verdict + suggestion ──────────────────────────────── */
+.eval-block { margin-top:18px; padding:14px 16px; background:var(--card-raised); border:0.5px solid var(--border); border-radius:var(--rsm); }
+.eval-scores { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+.eval-pill { display:inline-flex; align-items:center; font-family:var(--font-ui); font-size:11px; font-weight:600; padding:4px 10px; border-radius:12px; letter-spacing:0.02em; }
+.eval-pill.good { background:var(--ok-bg); color:var(--ok); border:0.5px solid var(--ok-bd); }
+.eval-pill.mid  { background:var(--warn-bg); color:var(--warn); border:0.5px solid var(--warn-bd); }
+.eval-pill.low  { background:var(--err-bg); color:var(--error); border:0.5px solid var(--err-bd); }
+.eval-verdict   { font-family:var(--font-ui); font-size:12px; color:var(--text3); line-height:1.5; margin-bottom:4px; }
+.eval-suggestion { font-family:var(--font-ui); font-size:12px; color:var(--text3); line-height:1.55; font-style:italic; }
+
+/* ── Cover letter — paragraphs with labels ───────────────────────────────────── */
+.cl-header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:10px; border-bottom:0.5px solid var(--border); }
+.cl-header-label { font-family:var(--font-ui); font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--text4); }
+.cl-word-count { font-family:var(--font-ui); font-size:11px; font-weight:500; }
+.para-block { margin-bottom:18px; }
+.para-label-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.para-label-btn { font-family:var(--font-ui); font-size:9px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:3px 8px; border-radius:4px; border:0.5px solid var(--border-mid); background:var(--card-raised); color:var(--text4); cursor:pointer; transition:all .15s; }
+.para-label-btn:hover { background:var(--text); color:var(--bg); border-color:var(--text); }
+.para-label-btn.active { background:var(--s4-full); color:#fff; border-color:var(--s4-full); }
+.para-label-note { font-family:var(--font-ui); font-size:11px; color:var(--text4); }
+.para-text { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:15px; color:var(--text); line-height:1.85; }
+
+/* ── Resume bullets ──────────────────────────────────────────────────────────── */
+.bullets-summary { font-family:var(--font-ui); font-size:12px; color:var(--text3); margin-bottom:14px; font-style:italic; }
+.bullet-card { background:var(--card); border:0.5px solid var(--border); border-radius:var(--rsm); padding:16px 18px; margin-bottom:10px; }
+.bullet-rewritten { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:14.5px; color:var(--text); line-height:1.75; margin-bottom:8px; }
+.bullet-argues { font-family:var(--font-ui); font-size:12px; color:var(--s3-sub); margin-bottom:10px; line-height:1.5; }
+.bullet-original-row { display:flex; gap:8px; align-items:flex-start; padding-top:8px; border-top:0.5px solid var(--border); }
+.bullet-original-label { font-family:var(--font-ui); font-size:10px; font-weight:500; color:var(--text4); letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap; padding-top:2px; flex-shrink:0; }
+.bullet-original-text { font-family:var(--font-ui); font-size:12px; color:var(--text4); line-height:1.55; }
+
+/* ── Interview prep — section cards ──────────────────────────────────────────── */
+.interview-section { margin-bottom:20px; background:var(--card); border:0.5px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.interview-section-title { font-family:var(--font-d); font-size:13px; font-weight:800; color:var(--text); letter-spacing:-0.01em; padding:14px 18px; background:var(--card-raised); border-bottom:0.5px solid var(--border); text-transform:uppercase; letter-spacing:0.06em; font-size:10px; }
+.interview-section-body { padding:14px 18px; display:flex; flex-direction:column; gap:10px; }
+.interview-qa { background:var(--card-inset); border:0.5px solid var(--border); border-radius:var(--rsm); padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
+.interview-qa-hard { border-left:3px solid var(--error); }
+.interview-q { display:flex; gap:10px; align-items:flex-start; }
+.interview-q-label { font-family:var(--font-d); font-size:10px; font-weight:800; width:20px; height:20px; border-radius:50%; background:var(--s2-full); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+.interview-q-label.hard { background:var(--error); }
+.interview-q-label.ask  { background:var(--s3-full); }
+.interview-q span:last-child { font-family:var(--font-ui); font-size:13.5px; font-weight:500; color:var(--text); line-height:1.55; }
+.interview-field { display:flex; flex-direction:column; gap:3px; padding:8px 10px; background:var(--card); border-radius:var(--rxs); border:0.5px solid var(--border); }
+.interview-field-evidence { border-left:3px solid var(--s3-full); }
+.interview-field-avoid    { border-left:3px solid var(--error); }
+.interview-field-label { font-family:var(--font-ui); font-size:9px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text4); }
+.interview-field-value { font-family:var(--font-ui); font-size:13px; color:var(--text2); line-height:1.6; }
+.interview-para  { font-family:var(--font-ui); font-size:13.5px; color:var(--text2); line-height:1.7; }
+.interview-bullet { font-family:var(--font-ui); font-size:13px; color:var(--text2); line-height:1.6; padding-left:14px; position:relative; }
+.interview-bullet::before { content:'·'; position:absolute; left:0; color:var(--text4); font-weight:700; }
+.interview-quote { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:14px; color:var(--text2); line-height:1.7; border-left:3px solid var(--border-mid); padding:6px 12px; margin:4px 0; }
+
+/* ── Brief card — cover letter decision record ───────────────────────────────── */
+.brief-card { background:var(--card-raised); border:0.5px solid var(--border); border-radius:var(--rsm); margin-bottom:14px; overflow:hidden; }
+.brief-card-header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--card-raised); border-bottom:0.5px solid var(--border); }
+.brief-card-title { font-family:var(--font-ui); font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text4); }
+.brief-card-toggle { font-family:var(--font-ui); font-size:12px; background:none; border:none; cursor:pointer; color:var(--text4); padding:2px 6px; border-radius:4px; transition:color .15s; }
+.brief-card-toggle:hover { color:var(--text); }
+.brief-card-body { padding:10px 14px; display:flex; flex-direction:column; gap:6px; }
+.brief-card-row { display:flex; gap:8px; align-items:flex-start; font-family:var(--font-ui); font-size:12px; line-height:1.5; }
+.brief-card-icon { color:var(--text4); flex-shrink:0; width:14px; text-align:center; margin-top:1px; }
+.brief-card-label { color:var(--text4); flex-shrink:0; min-width:100px; }
+.brief-card-value { color:var(--text2); flex:1; }
+.brief-card-footer { font-family:var(--font-ui); font-size:11px; color:var(--text4); font-style:italic; margin-top:6px; padding-top:8px; border-top:0.5px solid var(--border); }
+
+/* ── Output doc + refine section ────────────────────────────────────────────── */
+.output-doc { margin-bottom:14px; }
+.output-brief { font-family:var(--font-ui); font-size:12px; color:var(--text4); margin-bottom:14px; font-style:italic; }
+.output-brief em { color:var(--text3); }
+.copy-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.refine-section { margin-top:18px; padding-top:16px; border-top:0.5px solid var(--border); }
+.refine-label { font-family:var(--font-ui); font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text4); margin-bottom:8px; }
+.chip-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+.chip { font-family:var(--font-ui); font-size:11px; font-weight:500; padding:5px 12px; border:0.5px solid var(--border-mid); border-radius:20px; background:var(--card-raised); color:var(--text3); cursor:pointer; transition:all .15s; }
+.chip:hover { border-color:var(--border-str); color:var(--text); background:var(--card); }
+.diagnosis-display { background:var(--card-raised); border:0.5px solid var(--border); border-radius:var(--rsm); padding:12px 14px; margin-bottom:10px; }
+.diag-loading { font-family:var(--font-ui); font-size:12px; color:var(--text4); font-style:italic; }
+.diag-block { display:flex; flex-direction:column; gap:6px; }
+.diag-row { display:flex; gap:8px; align-items:flex-start; font-family:var(--font-ui); font-size:12px; line-height:1.5; }
+.diag-icon { color:var(--text4); flex-shrink:0; width:14px; text-align:center; }
+.diag-label { color:var(--text4); flex-shrink:0; min-width:60px; }
+.diag-value { color:var(--text2); flex:1; }
+.diag-fix-row .diag-label { color:var(--ok); }
+.diag-preserve-row .diag-label { color:var(--s2-full); }
+.refinement-note { font-family:var(--font-ui); font-size:12px; color:var(--ok); margin-bottom:8px; }
+.output-doc.refining { opacity:0.4; pointer-events:none; transition:opacity .3s; }
+
+/* ── Rethink section ─────────────────────────────────────────────────────────── */
+.rethink-section { margin-top:16px; padding-top:14px; border-top:0.5px solid var(--border); }
+.rethink-label { font-family:var(--font-ui); font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text4); display:block; margin-bottom:6px; }
+.rethink-options { display:flex; flex-direction:column; gap:6px; }
+
+/* ── Form answers ────────────────────────────────────────────────────────────── */
+.form-answers-list { display:flex; flex-direction:column; gap:12px; }
+.form-answer-card { background:var(--card); border:0.5px solid var(--border); border-radius:var(--rsm); padding:14px 16px; }
+.form-answer-field { font-family:var(--font-ui); font-size:11px; font-weight:600; color:var(--text4); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:6px; }
+.form-answer-text { font-family:var(--font-ui); font-size:13.5px; color:var(--text); line-height:1.7; }
 .copy-btn { font-family:var(--font-ui); font-size:12px; font-weight:500; padding:7px 14px; border:0.5px solid var(--border-mid); border-radius:var(--rsm); background:var(--card-raised); color:var(--text3); cursor:pointer; transition:all .15s; }
 .copy-btn:hover { border-color:var(--border-str); color:var(--text); }
 .copy-btn.copied { background:var(--ok-bg); color:var(--ok); border-color:var(--ok-bd); }
