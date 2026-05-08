@@ -72,6 +72,17 @@
   <!-- MAIN CONTENT -->
   <main class="main">
 
+  <!-- Elevator navigation — appears after Step 1, floats left of main content -->
+  <div class="elevator-nav hidden" id="elevatorNav">
+    <button class="elevator-btn" id="elevatorUp" onclick="elevatorUp()" title="Go to previous step" disabled>&#8679;</button>
+    <button class="elevator-btn" id="elevatorDown" onclick="elevatorDown()" title="Go to next step" disabled>&#8681;</button>
+  </div>
+
+  <!-- One-time sidebar education tooltip -->
+  <div class="sidebar-tooltip hidden" id="sidebarTooltip">
+    Your steps are saved here. Click any completed step to go back and edit.
+  </div>
+
   <div class="hero">
     <h1 class="hero-title">Outreach Architect</h1>
     <p class="hero-tagline">Reframe your worth. Built from evidence, not templates.</p>
@@ -174,6 +185,9 @@
     </div>
 
     <p class="hint-text">If your CV uses columns or tables, paste the text version — formatting can interfere with extraction.</p>
+
+    <!-- ATS extraction note — shown after file upload, not on paste -->
+    <div class="cv-extraction-note hidden" id="cvExtractionNote"></div>
 
     <button class="btn-primary" onclick="completeStep1()">Continue &#8594;</button>
   </section>
@@ -476,20 +490,25 @@
       <p class="step-subtitle">Two things — both optional, both change the output significantly.</p>
     </div>
 
-    <!-- Referral -->
-    <div class="field-group">
-      <label class="field-label">Were you referred by someone?</label>
+    <!-- Referral — shown when Cover Letter or Cold Outreach Email selected -->
+    <div class="field-group voice-field" id="referralField">
+      <label class="field-label">Were you referred by someone? <span class="field-optional">Optional</span></label>
       <input class="input-text" id="referralName" type="text"
-        placeholder="Their name — e.g. Priya Mehta. Leave blank if not referred.">
-      <p class="hint-text">A referral name goes into the first sentence of your cover letter naturally.</p>
+        placeholder="Their name — if you know someone there, your letter opens differently.">
+      <p class="hint-text">A referral name goes into the first sentence of your cover letter and email naturally.</p>
     </div>
 
-    <!-- Writing sample -->
-    <div class="field-group" style="margin-top:6px;padding-top:20px;border-top:1px solid var(--divider);">
-      <label class="field-label">Paste something you've written <span style="font-weight:400;color:var(--text3);">— optional but valuable</span></label>
+    <!-- Writing sample — shown when Cover Letter or Cold Outreach Email selected -->
+    <div class="field-group voice-field" id="writingSampleField" style="margin-top:6px;padding-top:20px;border-top:1px solid var(--divider);">
+      <label class="field-label">Paste something you've written <span class="field-optional">Optional but valuable</span></label>
       <textarea class="textarea" id="writingSample" rows="4"
-        placeholder="An email, a Slack message, a LinkedIn post — anything. We take the style and leave the content."></textarea>
-      <p class="hint-text">We read the rhythm, formality, and sentence length. If you provide this, every asset sounds like you specifically — not like a polished template.</p>
+        placeholder="An email, a Slack message, a LinkedIn post — anything. We take the style, leave the content."></textarea>
+      <p class="hint-text">We read the rhythm, formality, and sentence length. Every asset sounds like you specifically — not a polished template.</p>
+    </div>
+
+    <!-- No-voice note — shown when neither Cover Letter nor Cold Email selected -->
+    <div class="field-group hidden" id="noVoiceNote">
+      <p class="hint-text">Your selected assets don't need a writing sample — we'll build from your CV and brief directly.</p>
     </div>
 
     <button class="btn-primary" onclick="proceedToChoosePath()">Continue &#8594;</button>
