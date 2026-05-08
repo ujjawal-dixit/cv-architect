@@ -339,17 +339,7 @@ body {
 .asset-nudge { font-family:var(--font-s); font-style:italic; font-size:13px; color:var(--text3); padding:6px 0; animation:fadeIn .3s ease; }
 
 /* Also keep old asset-list classes for compatibility */
-.asset-list { border:0.5px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:8px; background:var(--card); }
-.asset-list-item { display:flex; align-items:center; justify-content:space-between; padding:15px 16px; border-bottom:0.5px solid var(--border); cursor:pointer; transition:background .15s; gap:16px; }
-.asset-list-item:last-child { border-bottom:none; }
-.asset-list-item:hover { background:var(--card-raised); }
-.asset-list-item.selected { background:var(--info-bg); border-left:3px solid var(--info); }
-.asset-list-body { display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
-.asset-list-name { font-family:var(--font-d); font-size:14px; font-weight:700; color:var(--text); }
-.asset-list-desc { font-family:var(--font-ui); font-size:12px; color:var(--text3); }
-.asset-list-check { width:22px; height:22px; border-radius:5px; border:1.5px solid var(--border-mid); flex-shrink:0; transition:all .15s; position:relative; }
-.asset-list-item.selected .asset-list-check { background:var(--info); border-color:var(--info); }
-.asset-list-item.selected .asset-list-check::after { content:''; position:absolute; left:5px; top:2px; width:8px; height:5px; border-left:2px solid #fff; border-bottom:2px solid #fff; transform:rotate(-45deg); }
+/* .asset-list-* removed — Step 0 now uses .asset-card grid */
 
 /* ── Buttons ────────────────────────────────────────────────────────────────── */
 .btn-primary {
@@ -806,3 +796,71 @@ body {
 /* ── Utility ────────────────────────────────────────────────────────────────── */
 .hidden { display:none !important; }
 .fade-in { animation:fadeUp .3s ease forwards; }
+
+/* ── Elevator navigation ─────────────────────────────────────────────────────── */
+.elevator-nav {
+  position:fixed; left:calc(var(--sidebar-w) + 12px); top:50vh;
+  transform:translateY(-50%); z-index:100;
+  display:flex; flex-direction:column; gap:4px;
+}
+.elevator-btn {
+  width:32px; height:32px; border-radius:8px;
+  background:var(--card); border:1px solid var(--border-str);
+  color:var(--text2); font-size:16px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .15s; box-shadow:0 1px 4px rgba(0,0,0,.08);
+  line-height:1;
+}
+.elevator-btn:hover:not(:disabled) {
+  background:var(--text); color:var(--bg);
+  border-color:var(--text);
+}
+.elevator-btn:disabled { opacity:0.3; cursor:not-allowed; }
+.dark .elevator-btn { background:var(--card-raised); }
+/* Hide elevator on mobile — sidebar handles navigation */
+@media (max-width:720px) { .elevator-nav { display:none; } }
+
+/* ── Sidebar done-step hover state ──────────────────────────────────────────── */
+.sidebar-step.done.hovering {
+  opacity:0.9;
+  filter:brightness(1.08);
+}
+.sidebar-step.done { cursor:pointer; }
+
+/* ── Sidebar one-time education tooltip ─────────────────────────────────────── */
+.sidebar-tooltip {
+  position:fixed; left:calc(var(--sidebar-w) + 16px); top:80px;
+  background:var(--text); color:var(--bg);
+  font-family:var(--font-ui); font-size:12px; font-weight:500;
+  padding:8px 14px; border-radius:8px; z-index:200;
+  max-width:220px; line-height:1.5;
+  box-shadow:0 4px 16px rgba(0,0,0,.15);
+  animation:fadeInSlide .3s ease;
+}
+.sidebar-tooltip::before {
+  content:''; position:absolute; left:-6px; top:50%;
+  transform:translateY(-50%);
+  border:6px solid transparent;
+  border-right-color:var(--text);
+  border-left:none;
+}
+@keyframes fadeInSlide {
+  from { opacity:0; transform:translateX(-8px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+@media (max-width:720px) { .sidebar-tooltip { display:none; } }
+
+/* ── CV extraction ATS note ──────────────────────────────────────────────────── */
+.cv-extraction-note {
+  font-family:var(--font-ui); font-size:12px; color:var(--text3);
+  line-height:1.6; padding:10px 14px;
+  background:var(--card-raised); border:0.5px solid var(--border);
+  border-left:3px solid var(--s2-full);
+  border-radius:var(--rsm); margin-top:10px;
+}
+
+/* ── Field optional label ────────────────────────────────────────────────────── */
+.field-optional {
+  font-family:var(--font-ui); font-size:11px; font-weight:400;
+  color:var(--text4); margin-left:6px;
+}
