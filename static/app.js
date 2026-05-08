@@ -45,11 +45,13 @@ function toggleDark() {
 // ── Progress pips ─────────────────────────────────────────────────────────────
 const stepLabels = {
   0: 'Start — Choose your assets',
-  1: 'Step 1 — Your Story', 2: 'Step 2 — Set Role',
+  1: 'Step 1 — Your Story',
+  2: 'Step 2 — Set Role',
   3: 'Step 3 — Read Truth',
-  3.5: 'Step 3.5 — Sharpen Truth', 4: 'Step 4 — Your Voice',
-  4.25: 'Form Questions',
-  4.5: 'Step 4.5 — Choose Path', 5: 'Step 5 — Build Assets',
+  3.5: 'Step 3.5 — Sharpen Truth',
+  4: 'Step 4 — Your Voice',
+  4.25: 'Step 4.25 — Form Questions',
+  5: 'Step 5 — Build Assets',
 };
 
 function updateProgress(step) {
@@ -341,6 +343,7 @@ function completeStep0() {
   // Compute required steps from union of asset requirements
   const needs = {
     research: false, brief: false, step35: false, routing: false, form: false,
+    step4: false, voice: false,
   };
   state.selectedAssets.forEach(asset => {
     const req = ASSET_STEPS[asset] || {};
@@ -350,7 +353,22 @@ function completeStep0() {
     if (req.needsRouting)  needs.routing  = true;
     if (req.needsForm)     needs.form     = true;
   });
+  // Step 4 needed if Cover Letter or Cold Email selected
+  needs.voice  = state.selectedAssets.includes('Cover Letter') ||
+                 state.selectedAssets.includes('Cold Outreach Email');
+  needs.step4  = needs.voice || state.selectedAssets.includes('Answer Application Form');
   state.flowNeeds = needs;
+
+  // Gate Step 4 voice fields based on selected assets
+  const voiceFields = document.querySelectorAll('.voice-field');
+  const noVoiceNote = document.getElementById('noVoiceNote');
+  if (needs.voice) {
+    voiceFields.forEach(el => el.classList.remove('hidden'));
+    noVoiceNote?.classList.add('hidden');
+  } else {
+    voiceFields.forEach(el => el.classList.add('hidden'));
+    noVoiceNote?.classList.remove('hidden');
+  } // voice fields gated
 
   // Persist selection summary in hero area so it's always visible
   const summary = state.selectedAssets.join(' · ');
@@ -601,9 +619,15 @@ function readFile(file, type) {
           showToast(data.error);
           return;
         }
-        if (type === 'cv') state.cvText = data.text;
-        else               state.jdText = data.text;
-        if (statusEl) statusEl.textContent = `✓ ${file.name} — ${data.text.split(/\s+/).length} words extracted`;
+        if (type === 'cv') {
+          state.cvText = data.text;
+          const wordCount = data.text.split(/\s+/).length;
+          if (statusEl) statusEl.textContent = `✓ ${file.name} — ${wordCount} words extracted`;
+          showExtractionATSMessage(wordCount);
+        } else {
+          state.jdText = data.text;
+          if (statusEl) statusEl.textContent = `✓ ${file.name} — ${data.text.split(/\s+/).length} words extracted`;
+        }
       } catch (err) {
         if (statusEl) statusEl.textContent = '⚠ Extraction failed — please paste the text instead.';
         showToast('File extraction failed. Please paste the text directly.');
@@ -667,6 +691,8 @@ async function completeStep1() {
   collapseStep('step1', 'step1Collapsed');
   activateStep('step2');
   updateProgress(2);
+  updateElevatorButtons();
+  showSidebarTooltip();
 
   // CV parsing — runs immediately in background, foundation of everything
   // User does not wait — they proceed to Step 2 while this runs
@@ -1292,15 +1318,27 @@ document.getElementById('referralName')?.addEventListener('input', (e) => {
 // are derived from research and CV parsing, not from user chips
 
 async function proceedToChoosePath() {
-  state.writingSample = val('writingSample');
+  // Determine if writing sample and referral name are needed for selected assets
+  const needsVoice = state.selectedAssets.includes('Cover Letter') ||
+                     state.selectedAssets.includes('Cold Outreach Email');
 
-  const referralName = val('referralName');
+  state.writingSample = needsVoice ? val('writingSample') : '';
+
+  const referralName = needsVoice ? val('referralName') : '';
   state.applicationContext = {
     referral_name:    referralName,
     company_stage:    state.brief.derived_company_stage    || 'growing',
-    career_situation: state.brief.derived_career_situation || 'growing',
+    career_situation: state.brief.derived_career_situation || 'standard',
+    cv_register:      state.brief.parsed_cv?.cv_register   || 'standard',
   };
   state.brief.application_context = state.applicationContext;
+
+  // Store situation selection if set
+  const situationEl = document.getElementById('situationSelect');
+  if (situationEl?.value) {
+    state.brief.situation = situationEl.value;
+    state.applicationContext.situation = situationEl.value;
+  }
 
   collapseStep('step4', 'step4Collapsed');
 
@@ -1317,54 +1355,9 @@ async function proceedToChoosePath() {
   updateProgress(5);
 }
 
-// Populate Step 4.5 asset checkboxes from Step 0 selection — user can still adjust
-function populateStep45Assets() {
-  const container = document.getElementById('assetOptions');
-  if (!container) return;
-
-  const assetDefs = [
-    { value: 'Cover Letter',            icon: '&#9998;', name: 'Cover Letter',            desc: 'Written from your profile for this job.' },
-    { value: 'Resume Bullets',          icon: '&#9632;', name: 'Resume Bullets',          desc: 'Your bullets, rewritten to get selected.' },
-    { value: 'Interview Prep',          icon: '&#9654;', name: 'Interview Prep',          desc: 'The right questions. Your best answers.' },
-    { value: 'Cold Outreach Email',     icon: '&#9993;', name: 'Cold Outreach Email',     desc: 'Email to grab attention of recruiter.' },
-    { value: 'Answer Application Form', icon: '&#9634;', name: 'Answer Application Form', desc: 'Personalized answers to application questions.' },
-  ];
-
-  container.innerHTML = '';
-  assetDefs.forEach(def => {
-    const isChecked = state.selectedAssets.includes(def.value);
-    const label = document.createElement('label');
-    label.className = 'asset-option' + (isChecked ? ' checked' : '');
-    label.innerHTML = `
-      <input type="checkbox" value="${def.value}"${isChecked ? ' checked' : ''}>
-      <div class="asset-option-content">
-        <span class="asset-icon">${def.icon}</span>
-        <div><span class="asset-name">${def.name}</span><span class="asset-desc">${def.desc}</span></div>
-      </div>
-      <span class="asset-check">&#10003;</span>`;
-    const cb = label.querySelector('input');
-    label.addEventListener('click', (e) => {
-      if (e.target === cb) return;
-      e.preventDefault();
-      cb.checked = !cb.checked;
-      label.classList.toggle('checked', cb.checked);
-    });
-    cb.addEventListener('change', () => label.classList.toggle('checked', cb.checked));
-    container.appendChild(label);
-  });
-}
-
-// ── STEP 4.5 ──────────────────────────────────────────────────────────────────
-document.querySelectorAll('.asset-option').forEach(label => {
-  const cb = label.querySelector('input[type=checkbox]');
-  label.addEventListener('click', (e) => {
-    if (e.target === cb) return;
-    e.preventDefault();
-    cb.checked = !cb.checked;
-    label.classList.toggle('checked', cb.checked);
-  });
-  cb.addEventListener('change', () => label.classList.toggle('checked', cb.checked));
-});
+// ── STEP 4.5 — permanently removed ───────────────────────────────────────────
+// Asset selection now lives entirely in Step 0 (state.selectedAssets).
+// The old Step 4.5 DOM checkboxes and populateStep45Assets() are removed.
 
 function getSelectedAssets() {
   return Array.from(document.querySelectorAll('.asset-option input:checked')).map(cb => cb.value);
@@ -1460,7 +1453,6 @@ async function generateAssets() {
   document.getElementById('generateBtn').disabled = true;
 
   const n = selected.length;
-  setText('step45Summary', `${n} asset${n !== 1 ? 's' : ''} built`);
 
   // Separate form answering from other assets — different endpoint
   const formSelected    = selected.includes('Answer Application Form');
@@ -2096,14 +2088,6 @@ function renderInterviewHTML(text, evalData) {
     + buildEvalBlock(evalData);
 }
 
-function renderStoryCard(card) {
-  const rows = card.rows.map(r => {
-    const [label, ...rest] = r.split(':');
-    return `<div class="story-card-row"><span>${safeText(label)}:</span> ${safeText(rest.join(':').trim())}</div>`;
-  }).join('');
-  return `<div class="story-card"><div class="story-card-title">${safeText(card.title)}</div>${rows}</div>`;
-}
-
 // ── Form answers renderer ──────────────────────────────────────────────────────
 function renderFormAnswersHTML(raw) {
   if (!raw) return '';
@@ -2440,7 +2424,132 @@ function resetAll() {
   location.reload();
 }
 
-// ── Rating system ─────────────────────────────────────────────────────────────
+// ── Elevator navigation — up/down arrows for step navigation ──────────────────
+// Appears after Step 1 completes. Sits at vertical center of main content left edge.
+// Up arrow: go to previous done step. Down arrow: go to next done step.
+// Nudge fires on up arrow when the step has downstream consequences.
+
+const STEP_ORDER = [1, 2, 3, 3.5, 4, 5];
+const STEP_CONSEQUENCES = {
+  1: 'Going back to Step 1 will reset everything — all research and brief will need to be rebuilt.',
+  2: 'Changing this will restart the process from Step 3 — the brief will be rebuilt.',
+  3: 'Changing your brief approval will restart from Step 3.5.',
+  3.5: 'Changing your bullet answers will update the brief before generation.',
+};
+
+function getCurrentStepIndex() {
+  // Find the active step from sidebar
+  for (let i = STEP_ORDER.length - 1; i >= 0; i--) {
+    const s = STEP_ORDER[i];
+    const el = document.getElementById('srail' + String(s).replace('.', ''));
+    if (el && (el.classList.contains('active') || el.classList.contains('done'))) {
+      return i;
+    }
+  }
+  return 0;
+}
+
+function elevatorUp() {
+  const currentIdx = getCurrentStepIndex();
+  if (currentIdx <= 0) return;
+
+  // Find previous done step
+  let targetIdx = currentIdx - 1;
+  while (targetIdx >= 0) {
+    const s = STEP_ORDER[targetIdx];
+    const el = document.getElementById('srail' + String(s).replace('.', ''));
+    if (el && el.classList.contains('done')) break;
+    targetIdx--;
+  }
+  if (targetIdx < 0) return;
+
+  const targetStep = STEP_ORDER[targetIdx];
+  const consequence = STEP_CONSEQUENCES[targetStep];
+
+  if (consequence) {
+    // Show nudge before navigating
+    const confirmed = confirm(consequence + '\n\nContinue?');
+    if (!confirmed) return;
+  }
+
+  sidebarStepClick(targetStep);
+  updateElevatorButtons();
+}
+
+function elevatorDown() {
+  const currentIdx = getCurrentStepIndex();
+  if (currentIdx >= STEP_ORDER.length - 1) return;
+
+  // Find next done step
+  let targetIdx = currentIdx + 1;
+  while (targetIdx < STEP_ORDER.length) {
+    const s = STEP_ORDER[targetIdx];
+    const el = document.getElementById('srail' + String(s).replace('.', ''));
+    if (el && el.classList.contains('done')) break;
+    targetIdx++;
+  }
+  if (targetIdx >= STEP_ORDER.length) return;
+
+  sidebarStepClick(STEP_ORDER[targetIdx]);
+  updateElevatorButtons();
+}
+
+function updateElevatorButtons() {
+  const elevator = document.getElementById('elevatorNav');
+  if (!elevator) return;
+
+  const currentIdx = getCurrentStepIndex();
+
+  // Check if any done steps exist above or below
+  let hasUp = false, hasDown = false;
+  for (let i = 0; i < currentIdx; i++) {
+    const s = STEP_ORDER[i];
+    const el = document.getElementById('srail' + String(s).replace('.', ''));
+    if (el && el.classList.contains('done')) { hasUp = true; break; }
+  }
+  for (let i = currentIdx + 1; i < STEP_ORDER.length; i++) {
+    const s = STEP_ORDER[i];
+    const el = document.getElementById('srail' + String(s).replace('.', ''));
+    if (el && el.classList.contains('done')) { hasDown = true; break; }
+  }
+
+  const upBtn   = document.getElementById('elevatorUp');
+  const downBtn = document.getElementById('elevatorDown');
+  if (upBtn)   upBtn.disabled   = !hasUp;
+  if (downBtn) downBtn.disabled = !hasDown;
+
+  // Show elevator after Step 1 completes
+  elevator.classList.toggle('hidden', currentIdx < 1);
+}
+
+// ── One-time sidebar education tooltip ───────────────────────────────────────
+let sidebarTooltipShown = false;
+function showSidebarTooltip() {
+  if (sidebarTooltipShown) return;
+  sidebarTooltipShown = true;
+  const tooltip = document.getElementById('sidebarTooltip');
+  if (!tooltip) return;
+  tooltip.classList.remove('hidden');
+  setTimeout(() => tooltip.classList.add('hidden'), 5000);
+}
+
+// ── Extracted text ATS reframe ───────────────────────────────────────────────
+// After CV extraction, show the ATS-framed message
+function showExtractionATSMessage(wordCount) {
+  const el = document.getElementById('cvExtractionNote');
+  if (!el) return;
+  el.textContent = `This is your CV as an ATS reads it — plain text, no formatting. ${wordCount} words extracted. What you see here is what most application systems actually process. If it looks broken, your formatting may be working against you.`;
+  el.classList.remove('hidden');
+}
+
+// ── Sidebar hover state for done steps ───────────────────────────────────────
+// Adds hover class for pointer cursor and brightness lift — CSS handles the rest
+document.querySelectorAll('.sidebar-step').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    if (el.classList.contains('done')) el.classList.add('hovering');
+  });
+  el.addEventListener('mouseleave', () => el.classList.remove('hovering'));
+});
 function showRating() {
   hide('doneSection');
   show('ratingSection');
@@ -2523,14 +2632,24 @@ function showSuggestions() {
 function submitSuggestion() {
   const text = val('suggestionsText');
   if (!text) { showToast('Add your suggestion first.'); return; }
-  // Store suggestion
+  // Fire-and-forget to rating endpoint — consistent with privacy promise
+  // (data does not persist client-side; sent to server ratings log)
   try {
-    const existing = JSON.parse(sessionStorage.getItem('suggestions') || '[]');
-    existing.push({ text, timestamp: new Date().toISOString() });
-    sessionStorage.setItem('suggestions', JSON.stringify(existing));
-  } catch(e) {}
+    fetch('/api/submit-rating', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ratings: {},
+        feedback: `FEATURE_REQUEST: ${text}`,
+        company: state.brief.company || '',
+        job_title: state.brief.job_title || '',
+        narrative: '',
+        timestamp: new Date().toISOString(),
+      }),
+    });
+  } catch(e) { /* silently ignore */ }
   hide('suggestionsSection');
-  showToast('Thank you — noted.');
+  showToast('Thank you — noted. We\'ll reach out when it\'s live.');
 }
 
 // ── Safe text — sets text content without HTML interpretation ─────────────────
@@ -2575,9 +2694,9 @@ function escHtml(str) {
 // ── Intersection observer for step label ──────────────────────────────────────
 if ('IntersectionObserver' in window) {
   [
-    { id: 'step1', step: 1 }, { id: 'step2', step: 2 }, { id: 'step25', step: 2.5 },
-    { id: 'step3', step: 3 }, { id: 'step35', step: 3.5 }, { id: 'step4', step: 4 },
-    { id: 'step5', step: 5 },
+    { id: 'step1', step: 1 }, { id: 'step2', step: 2 },
+    { id: 'step3', step: 3 }, { id: 'step35', step: 3.5 },
+    { id: 'step4', step: 4 }, { id: 'step5', step: 5 },
   ].forEach(({ id, step }) => {
     const el = document.getElementById(id);
     if (!el) return;
