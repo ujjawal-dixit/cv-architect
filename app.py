@@ -621,6 +621,29 @@ CAREER_TRANSITIONS: [any industry or function changes, or NONE]""",
                       'ALL_METRICS','STRONGEST_SKILL','UNDERSOLD_SIGNALS',
                       'SKILLS_AND_TOOLS','EDUCATION','GAPS_IN_TIMELINE','CAREER_TRANSITIONS']:
             parsed[field.lower()] = parse_field(result, field)
+
+        # Derive writing register from CV bullet style — used as tone signal
+        # CV bullets are unguarded writing — more reliable than a writing sample
+        bullets = [l.strip() for l in cv_text.split('\n')
+                   if l.strip().startswith(('•', '-', '·', '*')) or
+                   (len(l.strip()) > 20 and len(l.strip()) < 120 and not l.strip().endswith(':'))]
+        if bullets:
+            sample = ' '.join(bullets[:8])
+            avg_words = sum(len(b.split()) for b in bullets[:8]) / max(len(bullets[:8]), 1)
+            has_numbers = bool(re.search(r'\d+[%$KMB]?', sample))
+            is_sparse   = avg_words < 12
+            is_formal   = bool(re.search(r'\b(led|managed|developed|established|architected|spearheaded)\b', sample.lower()))
+            if is_sparse and has_numbers:
+                parsed['cv_register'] = 'sparse_quantified'
+            elif has_numbers and not is_sparse:
+                parsed['cv_register'] = 'detailed_quantified'
+            elif is_formal and not has_numbers:
+                parsed['cv_register'] = 'formal_narrative'
+            else:
+                parsed['cv_register'] = 'standard'
+        else:
+            parsed['cv_register'] = 'standard'
+
         return parsed
     except Exception as e:
         return {'parse_error': str(e)}
@@ -988,11 +1011,18 @@ SOFT_SIGNALS: [1-2 cultural expectations visible in JD language]""",
         elif any(w in arc for w in ['senior', 'lead', 'director', 'head', 'vp']):
             brief['derived_career_situation'] = 'step_up'
         else:
-            brief['derived_career_situation'] = 'growing'
+            brief['derived_career_situation'] = 'standard'
+
+        # Compute jd_case — drives case-specific flow in frontend and prompts
+        jd_text_val = jd_text.strip() if jd_text else ''
+        if not jd_text_val or len(jd_text_val) < 30:
+            brief['jd_case'] = 'no_jd'
+        elif check_jd_thinness(jd_text_val):
+            brief['jd_case'] = 'thin'
+        else:
+            brief['jd_case'] = 'full'
 
         time.sleep(1.5)
-
-        # Pain point generation — Groq 70b
         # Moved away from template entirely — describes situations, not capabilities
         pain_raw = llm(
             f"""{LEVEL_1}
@@ -1067,7 +1097,11 @@ ROLE REALITY:
 INDUSTRY PRESSURE:
 {company_research['industry'][:300]}
 
-CANDIDATE BACKGROUND:
+CANDIDATE BACKGROUND — use to prioritise, not to fabricate:
+The candidate's confirmed strengths from their CV. Prioritise pain points
+where at least one of these signals shows the candidate has relevant evidence.
+Do not force fit. Do not exclude pain points where the gap is real.
+Surface real gaps honestly — but rank them below points where evidence exists.
 {cv_text[:800]}
 
 OUTPUT FORMAT — exactly 5 lines, nothing else, no markdown:
@@ -2804,11 +2838,13 @@ def run_specificity_eval(text, output_type):
             f"Output ONLY:\nSPECIFICITY_SCORE: [number]\nSPECIFICITY_NOTE: [one sentence]",
             max_tokens=80, quality="fast", temperature=0.1
         )
+        score_match = re.search(r'SPECIFICITY_SCORE:\s*(\d+)', result)
         return {
-            'specificity_score': int(re.search(r'SPECIFICITY_SCORE:\s*(\d+)', result).group(1)) if re.search(r'SPECIFICITY_SCORE:\s*(\d+)', result) else None,
+            'specificity_score': int(score_match.group(1)) if score_match else None,
             'specificity_note': parse_field(result, 'SPECIFICITY_NOTE'),
         }
-    except:
+    except Exception as e:
+        print(f"Specificity eval error: {e}")
         return {}
 
 def run_alignment_eval(text, brief, output_type):
@@ -2824,11 +2860,13 @@ def run_alignment_eval(text, brief, output_type):
             f"Output ONLY:\nALIGNMENT_SCORE: [number]\nSUGGESTED_REFINEMENT: [one specific instruction or NONE NEEDED]",
             max_tokens=100, quality="fast", temperature=0.1
         )
+        score_match = re.search(r'ALIGNMENT_SCORE:\s*(\d+)', result)
         return {
-            'alignment_score': int(re.search(r'ALIGNMENT_SCORE:\s*(\d+)', result).group(1)) if re.search(r'ALIGNMENT_SCORE:\s*(\d+)', result) else None,
+            'alignment_score': int(score_match.group(1)) if score_match else None,
             'suggested_refinement': parse_field(result, 'SUGGESTED_REFINEMENT'),
         }
-    except:
+    except Exception as e:
+        print(f"Alignment eval error: {e}")
         return {}
 
 # ── API Routes ─────────────────────────────────────────────────────────────────
@@ -3072,7 +3110,7 @@ PRESERVE: [what must not change]"""
             "preserve": pd(diagnosis_raw, 'PRESERVE'),
         }
 
-        time.sleep(1)
+        await asyncio.sleep(1)
 
         # Step 2: Surgical edit — Groq 70b
         edit_prompt = f"""{LEVEL_1}
