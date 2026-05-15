@@ -232,32 +232,37 @@ body {
   padding:28px; margin-bottom:8px;
   animation:fadeUp .35s ease forwards; transition:background .3s,border-color .3s;
 }
-.step.active { border-color:var(--border-mid); }
+/* Active step gets left accent border in the step's identity colour */
+.step.active {
+  border-color:var(--border-mid);
+  border-left:3px solid var(--s1-full);
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
+}
 
-/* Collapsed cards — minimal, no edit button (edit via sidebar) */
+/* Collapsed cards — clearly subordinate, no competition with active step */
 .step-collapsed {
   border:0.5px solid var(--border); border-radius:var(--radius);
-  padding:11px 16px; margin-bottom:6px; background:var(--card-raised);
-  opacity:.65; transition:all .25s; animation:fadeUp .3s ease forwards;
+  padding:10px 14px; margin-bottom:4px; background:transparent;
+  opacity:.5; transition:all .25s; animation:fadeUp .3s ease forwards;
   display:flex; align-items:center; gap:10px;
 }
-.step-collapsed:hover { opacity:.85; }
+.step-collapsed:hover { opacity:.75; background:var(--card-raised); }
 .collapsed-inner { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; }
 .collapsed-left  { display:flex; align-items:center; gap:10px; min-width:0; }
 .collapsed-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
 .check-badge {
-  width:18px; height:18px; border-radius:50%; background:var(--ok); color:#fff;
-  font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  width:16px; height:16px; border-radius:50%; background:var(--ok); color:#fff;
+  font-size:8px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
 .collapsed-eyebrow { display:block; font-family:var(--font-ui); font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text4); }
-.collapsed-name    { font-family:var(--font-d); font-size:13px; font-weight:700; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.collapsed-summary { font-family:var(--font-ui); font-size:11px; color:var(--text4); flex-shrink:0; }
+.collapsed-name    { font-family:var(--font-ui); font-size:12px; font-weight:500; color:var(--text3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.collapsed-summary { font-family:var(--font-ui); font-size:11px; color:var(--text4); flex-shrink:0; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .edit-btn {
-  font-family:var(--font-ui); font-size:10px; font-weight:500; padding:3px 9px;
-  border:0.5px solid var(--border-mid); border-radius:var(--rxs);
-  background:var(--card); color:var(--text3); cursor:pointer; transition:all .15s;
+  font-family:var(--font-ui); font-size:10px; font-weight:500; padding:3px 8px;
+  border:0.5px solid var(--border); border-radius:var(--rxs);
+  background:transparent; color:var(--text4); cursor:pointer; transition:all .15s;
 }
-.edit-btn:hover { background:var(--text); color:var(--bg); border-color:var(--text); }
+.edit-btn:hover { background:var(--card); color:var(--text2); border-color:var(--border-mid); }
 
 /* Step header */
 .step-header { margin-bottom:22px; }
@@ -468,19 +473,33 @@ body {
 
 /* ── Briefing accordion ─────────────────────────────────────────────────────── */
 .briefing-accordion { margin-top:14px; border:0.5px solid var(--border); border-radius:var(--rsm); overflow:hidden; }
-.briefing-accordion summary { padding:11px 16px; font-family:var(--font-ui); font-size:13px; font-weight:500; color:var(--text3); cursor:pointer; background:var(--card-raised); list-style:none; user-select:none; transition:color .15s; }
-.briefing-accordion summary::-webkit-details-marker { display:none; }
-.briefing-accordion summary:hover { color:var(--text); }
+/* Now div-based (not details) — supports show/hide via JS */
+.briefing-header {
+  padding:11px 16px; font-family:var(--font-ui); font-size:13px; font-weight:500;
+  color:var(--text3); cursor:pointer; background:var(--card-raised);
+  user-select:none; transition:color .15s;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.briefing-header:hover { color:var(--text); }
+.briefing-arrow { font-size:12px; color:var(--text4); }
 .briefing-body { padding:14px 16px; font-family:var(--font-ui); font-size:13px; color:var(--text2); line-height:1.7; border-top:0.5px solid var(--border); }
 .briefing-body strong { font-weight:600; color:var(--text); }
 
 /* ── Narrative reveal — Step 3 ──────────────────────────────────────────────── */
 .narrative-reveal {
   background:var(--s3-bg); border:0.5px solid var(--s3-bd); border-left:4px solid var(--s3-full);
-  border-radius:var(--radius); padding:18px 20px; margin-bottom:20px; animation:fadeUp .4s ease forwards;
+  border-radius:var(--radius); padding:22px 24px; margin-bottom:24px; animation:fadeUp .4s ease forwards;
 }
-.narrative-eyebrow { font-family:var(--font-ui); font-size:9px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--s3-sub); margin-bottom:10px; }
-.narrative-thread { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:17px; color:var(--s3-tx); line-height:1.65; }
+.narrative-eyebrow { font-family:var(--font-ui); font-size:9px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--s3-sub); margin-bottom:12px; }
+/* Narrative thread is the most important line in the product — make it feel like it */
+.narrative-thread {
+  font-family:var(--font-s); font-style:italic; font-weight:300;
+  font-size:20px; color:var(--s3-tx); line-height:1.6;
+  /* Slightly larger than before — this is the argument */
+}
+@media (max-width:720px) {
+  .narrative-thread { font-size:17px; }
+}
 
 /* ── Fit table ──────────────────────────────────────────────────────────────── */
 .fit-table-label { font-family:var(--font-ui); font-size:9px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--text4); margin-bottom:8px; }
@@ -660,8 +679,19 @@ body {
 /* ── Form answers ────────────────────────────────────────────────────────────── */
 .form-answers-list { display:flex; flex-direction:column; gap:12px; }
 .form-answer-card { background:var(--card); border:0.5px solid var(--border); border-radius:var(--rsm); padding:14px 16px; }
+/* Form answers — answer is the hero, question is the label above it */
+.form-answer-question {
+  font-family:var(--font-ui); font-size:11px; font-weight:500;
+  color:var(--text4); line-height:1.5; margin-bottom:8px;
+  /* Sentence case, not all-caps — questions rendered as muted labels */
+}
+.form-answer-body {
+  font-family:var(--font-ui); font-size:14px; color:var(--text); line-height:1.75;
+  /* The answer: prominent, readable, copy-ready */
+}
+/* Keep legacy classes for backwards compatibility */
 .form-answer-field { font-family:var(--font-ui); font-size:11px; font-weight:600; color:var(--text4); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:6px; }
-.form-answer-text { font-family:var(--font-ui); font-size:13.5px; color:var(--text); line-height:1.7; }
+.form-answer-text  { font-family:var(--font-ui); font-size:13.5px; color:var(--text); line-height:1.7; }
 .copy-btn { font-family:var(--font-ui); font-size:12px; font-weight:500; padding:7px 14px; border:0.5px solid var(--border-mid); border-radius:var(--rsm); background:var(--card-raised); color:var(--text3); cursor:pointer; transition:all .15s; }
 .copy-btn:hover { border-color:var(--border-str); color:var(--text); }
 .copy-btn.copied { background:var(--ok-bg); color:var(--ok); border-color:var(--ok-bd); }
@@ -755,7 +785,8 @@ body {
 
   /* Asset grid — 2 columns on mobile */
   .asset-grid { grid-template-columns:repeat(2,1fr); gap:6px; }
-  .asset-grid-row2 { grid-template-columns:1fr; gap:6px; }
+  /* Row 2 (2 cards) stays 2 columns on mobile — matches row 1's 2-col */
+  .asset-grid-row2 { grid-template-columns:repeat(2,1fr); gap:6px; }
 
   /* Confirm fields — single column */
   .confirm-fields { grid-template-columns:1fr; gap:10px; }
@@ -864,3 +895,12 @@ body {
   font-family:var(--font-ui); font-size:11px; font-weight:400;
   color:var(--text4); margin-left:6px;
 }
+
+
+/* ── Gap analysis — address guidance ─────────────────────────────────────────── */
+.fit-gap-handled {
+  display:block; font-family:var(--font-ui); font-size:10px;
+  color:var(--ok); margin-top:3px; font-style:italic;
+}
+/* Extracted CV preview in Step 1 */
+#cvExtractedPreview .field-label { color:var(--text4); }
