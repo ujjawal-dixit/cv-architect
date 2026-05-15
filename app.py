@@ -649,7 +649,27 @@ CAREER_TRANSITIONS: [any industry or function changes, or NONE]""",
         return {'parse_error': str(e)}
 
 # ── Company name and job title extraction — Groq 8b ───────────────────────────
-def extract_company_name(jd_text):
+def extract_company_name(jd_text, manual_company=''):
+    """Extract company name. Falls back to manual_company if JD is thin."""
+    if manual_company and manual_company.strip():
+        # User provided it explicitly — use it, don't re-extract
+        # But strip any role-like suffixes if the user mixed company + role
+        # e.g. "MakeMyTrip Product Management" → "MakeMyTrip"
+        clean = manual_company.strip()
+        # If manual entry looks like "Company RoleName", try to isolate company
+        try:
+            result = llm(
+                f"This text may contain a company name mixed with a job title.\n"
+                f"Extract ONLY the company name. Remove any job title or role description.\n"
+                f"Examples: 'Google Senior PM' → 'Google', 'MakeMyTrip Product Management' → 'MakeMyTrip'\n"
+                f"If the entire text is clearly just a company name, return it as-is.\n"
+                f"Output ONLY the company name.\n\nText: {clean}\n\nCompany name:",
+                max_tokens=20, quality="fast", temperature=0.0
+            )
+            extracted = result.strip()
+            return extracted if extracted and extracted.upper() != 'UNKNOWN' else clean
+        except:
+            return clean
     try:
         result = llm(
             f"Extract the hiring company name from this job description.\n"
@@ -661,10 +681,12 @@ def extract_company_name(jd_text):
     except:
         return ""
 
-def extract_job_title(jd_text):
+def extract_job_title(jd_text, company_name=''):
+    """Extract job title. Explicitly excludes the company name to prevent duplication."""
+    exclude = f" Do NOT return '{company_name}'." if company_name else ""
     try:
         return llm(
-            f"Extract the job title from this job description.\n"
+            f"Extract the job title from this job description.{exclude}\n"
             f"Output ONLY the job title. If unclear output: Role\n\nJD:\n{jd_text[:500]}\n\nJob title:",
             max_tokens=20, quality="fast", temperature=0.1
         ).strip() or "Role"
@@ -920,11 +942,11 @@ def run_research_agent(cv_text, jd_text, manual_company=""):
     brief = {'cv_text': cv_text, 'jd_text': jd_text}
     thin_warning = "Short JD detected — pain points may be less targeted." if check_jd_thinness(jd_text) else ""
 
-    company = extract_company_name(jd_text)
+    company = extract_company_name(jd_text, manual_company=manual_company)
     if not company and manual_company:
         company = manual_company.strip()
     brief['company']        = company
-    brief['job_title']      = extract_job_title(jd_text)
+    brief['job_title']      = extract_job_title(jd_text, company_name=company)
     brief['candidate_name'] = parse_field(cv_text[:200], 'name') or cv_text.split('\n')[0].strip()[:60]
 
     if not company:
@@ -1257,26 +1279,47 @@ CANDIDATE_VOICE_SIGNAL: [most distinctive phrase from candidate's own words — 
 
     # P2 — Narrative thread — Groq 70b
     # The single most important output of the brief assembly.
-    # This becomes the spine of the cover letter.
+    # P2 — Narrative thread — the single sentence every asset argues
+    # This is the highest-stakes LLM call in the pipeline.
+    # Generic output here makes every downstream asset generic.
     try:
         p2 = llm(
             f"""{LEVEL_1}
 
 YOUR TASK:
-Find the single argument this application must make.
+Find the single sentence that this application must argue.
 
 WHY THIS MATTERS:
-The narrative thread is the spine of everything built after this.
+The narrative thread is the spine of every asset built after this.
 The cover letter argues it. The bullets prove it. The interview prep
-reinforces it. Get this wrong and everything built on top of it is wrong.
+reinforces it. Get this wrong and everything built on it is wrong.
 
-The narrative thread is not a summary of the candidate's career.
+The narrative thread is NOT a summary of the candidate's career.
+It is NOT a compliment. It is NOT a description of their skills.
 It is the precise intersection of what this candidate has genuinely
-demonstrated and what this company most urgently needs.
-It is one sentence that a recruiter reads and thinks:
-"This is exactly what we need, and this person has done it."
+demonstrated and what this company most urgently needs — stated
+as an argument, not a description.
 
-CANDIDATE SIGNALS:
+THE DIFFERENCE BETWEEN GENERIC AND SPECIFIC:
+
+GENERIC (forbidden): "This product manager has a proven track record
+of driving growth and innovation through strategic product development."
+WHY IT FAILS: Could describe any PM at any company. Contains no
+specific evidence. No recruiter reads this and thinks "I need to meet them."
+
+SPECIFIC (required): "The PM who grew outreach response rates 3x by
+reading session recordings instead of accepting the obvious explanation
+is exactly the analyst-first instinct MakeMyTrip needs to integrate Atlys
+into a product millions of corporate travellers will actually use."
+WHY IT WORKS: Names a specific thing they did. Names the mechanism.
+Names the company's specific need. Recruiter reads it and thinks:
+"This is exactly what we need."
+
+THE STANDARD: Write a sentence a recruiter could not have predicted
+before reading this candidate's file. If the sentence could describe
+anyone who has worked in this field, rewrite it until it cannot.
+
+CANDIDATE SIGNALS (extract what is specific and real):
 Current role: {brief.get('current_role','')}
 Achievement 1: {brief.get('top_achievement_1','')}
 Achievement 2: {brief.get('top_achievement_2','')}
@@ -1284,7 +1327,7 @@ Achievement 3: {brief.get('top_achievement_3','')}
 Strongest skill: {brief.get('strongest_skill','')}
 Career narrative: {brief.get('career_narrative','')}
 Undersold quality: {brief.get('undersold_quality','')}
-Candidate's own voice signal: {brief.get('candidate_voice_signal','')}
+Candidate's own words: {brief.get('candidate_voice_signal','')}
 
 OPPORTUNITY SIGNALS:
 Company: {brief.get('company','')}
@@ -1300,19 +1343,19 @@ CANDIDATE'S OWN WORDS:
 ANYTHING MISSED:
 {anything_missed if anything_missed else "None provided."}
 
-[All optional inputs above — if empty, work from what exists.
-Never fabricate signals. If evidence is genuinely thin, produce
-what is honest rather than what sounds impressive.]
+[If any input is empty — work from what exists.
+Never fabricate. If evidence is thin, be honest rather than impressive.
+A shorter, specific sentence is better than a longer, generic one.]
 
 Output EXACTLY these fields, no preamble, no markdown:
-STRONGEST_OVERLAP: [precise intersection — what this candidate has that this role needs]
+STRONGEST_OVERLAP: [the specific evidence that most directly addresses the pain points]
 STRATEGIC_ANGLE: [how to position this candidate — the single sharpest argument]
-NARRATIVE_THREAD: [one sentence — the argument every asset makes]
-COMPANY_HOOK: [most specific observation about this company — for P3 and cold email]
+NARRATIVE_THREAD: [one sentence — specific evidence + specific company need + why this candidate and not another. Must contain at least one real number or specific mechanism from the CV. Cannot be generic.]
+COMPANY_HOOK: [most specific non-obvious observation about this company — for P3 and cold email]
 GAPS_TO_ADDRESS: [1-2 genuine gaps — honest, specific — NONE if absent]
 GAPS_TO_AVOID: [claims that outrun the evidence — NONE if absent]
-TONE_DIRECTION: [specific voice guidance based on candidate's words and situation]""",
-            max_tokens=700, quality="high"
+TONE_DIRECTION: [specific voice guidance based on candidate's own words and their situation]""",
+            max_tokens=800, quality="high"
         )
         for field in ['STRONGEST_OVERLAP','STRATEGIC_ANGLE','NARRATIVE_THREAD',
                       'COMPANY_HOOK','GAPS_TO_ADDRESS','GAPS_TO_AVOID','TONE_DIRECTION']:
