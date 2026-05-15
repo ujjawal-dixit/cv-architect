@@ -66,7 +66,7 @@
       </div>
 
     </div>
-    <button class="dm-btn" id="dmBtn" onclick="toggleDark()">Dark mode</button>
+    <button class="dm-btn" id="dmBtn" onclick="UI.toggleDark()">Dark mode</button>
   </nav>
 
   <!-- MAIN CONTENT -->
@@ -74,8 +74,8 @@
 
   <!-- Elevator navigation — appears after Step 1, floats left of main content -->
   <div class="elevator-nav hidden" id="elevatorNav">
-    <button class="elevator-btn" id="elevatorUp" onclick="elevatorUp()" title="Go to previous step" disabled>&#8679;</button>
-    <button class="elevator-btn" id="elevatorDown" onclick="elevatorDown()" title="Go to next step" disabled>&#8681;</button>
+    <button class="elevator-btn" id="elevatorUp" onclick="UI.elevatorUp()" title="Go to previous step" disabled>&#8679;</button>
+    <button class="elevator-btn" id="elevatorDown" onclick="UI.elevatorDown()" title="Go to next step" disabled>&#8681;</button>
   </div>
 
   <!-- One-time sidebar education tooltip -->
@@ -100,17 +100,17 @@
 
     <!-- Row 1: 3 cards -->
     <div class="asset-grid" id="assetSelectGrid">
-      <div class="asset-card" data-asset="Cover Letter" onclick="toggleAssetCard(this)">
+      <div class="asset-card" data-asset="Cover Letter" onclick="FLOW.toggleAssetCard(this)">
         <span class="asset-card-icon">✍️</span>
         <span class="asset-card-name">Cover Letter</span>
         <span class="asset-card-desc">Written from your profile for this job.</span>
       </div>
-      <div class="asset-card" data-asset="Resume Bullets" onclick="toggleAssetCard(this)">
+      <div class="asset-card" data-asset="Resume Bullets" onclick="FLOW.toggleAssetCard(this)">
         <span class="asset-card-icon">📋</span>
         <span class="asset-card-name">Resume Bullets</span>
         <span class="asset-card-desc">Your bullets, rewritten to get selected.</span>
       </div>
-      <div class="asset-card" data-asset="Interview Prep" onclick="toggleAssetCard(this)">
+      <div class="asset-card" data-asset="Interview Prep" onclick="FLOW.toggleAssetCard(this)">
         <span class="asset-card-icon">🎯</span>
         <span class="asset-card-name">Interview Prep</span>
         <span class="asset-card-desc">The right questions. Your best answers.</span>
@@ -118,19 +118,19 @@
     </div>
     <!-- Row 2: 2 cards -->
     <div class="asset-grid-row2">
-      <div class="asset-card" data-asset="Cold Outreach Email" onclick="toggleAssetCard(this)">
+      <div class="asset-card" data-asset="Cold Outreach Email" onclick="FLOW.toggleAssetCard(this)">
         <span class="asset-card-icon">📩</span>
         <span class="asset-card-name">Cold Outreach Email</span>
         <span class="asset-card-desc">Email to grab a recruiter's attention.</span>
       </div>
-      <div class="asset-card" data-asset="Answer Application Form" onclick="toggleAssetCard(this)">
+      <div class="asset-card" data-asset="Answer Application Form" onclick="FLOW.toggleAssetCard(this)">
         <span class="asset-card-icon">📝</span>
         <span class="asset-card-name">Answer Application Form</span>
         <span class="asset-card-desc">Personalised answers to your questions.</span>
       </div>
     </div>
     <!-- Full package — full width below -->
-    <div class="full-package-card" id="fullPackageCard" onclick="toggleFullPackage()">
+    <div class="full-package-card" id="fullPackageCard" onclick="FLOW.toggleFullPackage()">
       <div class="full-package-inner">
         <div class="full-package-body">
           <span class="full-package-name">⭐ Full Application Package</span>
@@ -141,7 +141,7 @@
     </div>
 
     <div class="asset-nudge hidden" id="assetNudge"></div>
-    <button class="btn-primary" id="step0Btn" onclick="completeStep0()">Continue &#8594;</button>
+    <button class="btn-primary" id="step0Btn" onclick="FLOW.completeStep0()">Continue &#8594;</button>
   </section>
 
   <!-- ═══════════════════════════════════════
@@ -162,8 +162,8 @@
     <div class="field-group">
       <label class="field-label">How would you like to add your CV?</label>
       <div class="toggle-row">
-        <button class="toggle-btn active" id="cvPasteBtn" onclick="switchMethod('cv','paste')">Paste text</button>
-        <button class="toggle-btn"        id="cvUploadBtn" onclick="switchMethod('cv','upload')">Upload file</button>
+        <button class="toggle-btn active" id="cvPasteBtn" onclick="FLOW.switchMethod('cv','paste')">Paste text</button>
+        <button class="toggle-btn"        id="cvUploadBtn" onclick="FLOW.switchMethod('cv','upload')">Upload file</button>
       </div>
     </div>
 
@@ -173,13 +173,13 @@
 
     <div id="cvUploadArea" class="field-group hidden">
       <label class="upload-zone" id="cvUploadZone"
-        ondragover="handleDragOver(event,'cvUploadZone')"
-        ondragleave="handleDragLeave(event,'cvUploadZone')"
-        ondrop="handleDrop(event,'cv')">
+        ondragover="FLOW.handleDragOver(event,'cvUploadZone')"
+        ondragleave="FLOW.handleDragLeave(event,'cvUploadZone')"
+        ondrop="FLOW.handleDrop(event,'cv')">
         <span class="upload-icon">&#8679;</span>
         <span class="upload-label">Drop your CV here or click to browse</span>
         <span class="upload-hint">.txt  .md  .pdf  .docx</span>
-        <input type="file" id="cvFile" accept=".txt,.md,.pdf,.docx" onchange="handleFile(event,'cv')" style="display:none">
+        <input type="file" id="cvFile" accept=".txt,.md,.pdf,.docx" onchange="FLOW.handleFile(event,'cv')" style="display:none">
       </label>
       <div class="upload-status hidden" id="cvFileStatus"></div>
     </div>
@@ -189,7 +189,7 @@
     <!-- ATS extraction note — shown after file upload, not on paste -->
     <div class="cv-extraction-note hidden" id="cvExtractionNote"></div>
 
-    <button class="btn-primary" onclick="completeStep1()">Continue &#8594;</button>
+    <button class="btn-primary" onclick="FLOW.completeStep1()">Continue &#8594;</button>
   </section>
 
   <div class="step-collapsed hidden" id="step1Collapsed">
@@ -241,9 +241,9 @@
     <div class="field-group">
       <label class="field-label">How would you like to add the job description?</label>
       <div class="toggle-row">
-        <button class="toggle-btn active" id="jdPasteBtn" onclick="switchJdMethod('paste')">Paste text</button>
-        <button class="toggle-btn"        id="jdImageBtn" onclick="switchJdMethod('image')">Upload image</button>
-        <button class="toggle-btn"        id="jdUploadBtn" onclick="switchJdMethod('upload')">Upload PDF</button>
+        <button class="toggle-btn active" id="jdPasteBtn" onclick="FLOW.switchJdMethod('paste')">Paste text</button>
+        <button class="toggle-btn"        id="jdImageBtn" onclick="FLOW.switchJdMethod('image')">Upload image</button>
+        <button class="toggle-btn"        id="jdUploadBtn" onclick="FLOW.switchJdMethod('upload')">Upload PDF</button>
       </div>
     </div>
 
@@ -253,13 +253,13 @@
 
     <div id="jdImageArea" class="field-group hidden">
       <label class="upload-zone" id="jdImageZone"
-        ondragover="handleDragOver(event,'jdImageZone')"
-        ondragleave="handleDragLeave(event,'jdImageZone')"
-        ondrop="handleDropJdImage(event)">
+        ondragover="FLOW.handleDragOver(event,'jdImageZone')"
+        ondragleave="FLOW.handleDragLeave(event,'jdImageZone')"
+        ondrop="FLOW.handleDropJdImage(event)">
         <span class="upload-icon">&#8679;</span>
         <span class="upload-label">Drop a screenshot or photo of the JD here</span>
         <span class="upload-hint">.jpg  .jpeg  .png</span>
-        <input type="file" id="jdImageFile" accept=".jpg,.jpeg,.png" onchange="handleJdImage(event)" style="display:none">
+        <input type="file" id="jdImageFile" accept=".jpg,.jpeg,.png" onchange="FLOW.handleJdImage(event)" style="display:none">
       </label>
       <div class="upload-status hidden" id="jdImageStatus"></div>
       <!-- Extracted text preview — editable before continuing -->
@@ -277,7 +277,7 @@
         <span class="upload-icon">&#8679;</span>
         <span class="upload-label">Drop the job description PDF here or click to browse</span>
         <span class="upload-hint">.pdf</span>
-        <input type="file" id="jdFile" accept=".pdf" onchange="handleJdPdf(event)" style="display:none">
+        <input type="file" id="jdFile" accept=".pdf" onchange="FLOW.handleJdPdf(event)" style="display:none">
       </label>
       <div class="upload-status hidden" id="jdFileStatus"></div>
       <!-- Extracted text preview for PDF -->
@@ -293,7 +293,7 @@
       <input class="input-text" id="manualCompany" type="text" placeholder="e.g. Google, Stripe, Monzo…">
     </div>
 
-    <button class="btn-primary" id="researchBtn" onclick="runResearch()">Decode this role &#8594;</button>
+    <button class="btn-primary" id="researchBtn" onclick="FLOW.runResearch()">Decode this role &#8594;</button>
 
     <!-- Loading state — properly wrapped -->
     <div class="loading hidden" id="loadingResearch">
@@ -357,7 +357,7 @@
         <div id="painPointsList" class="pain-list"></div>
       </div>
 
-      <button class="context-trigger hidden" id="contextTrigger" onclick="showContext()">
+      <button class="context-trigger hidden" id="contextTrigger" onclick="FLOW.showContext()">
         + Anything the JD doesn't show?
       </button>
       <div class="hidden" id="contextArea">
@@ -367,7 +367,7 @@
         </div>
       </div>
 
-      <button class="btn-primary" id="confirmPainBtn" onclick="confirmPainPoints()">Lock these in &#8594;</button>
+      <button class="btn-primary" id="confirmPainBtn" onclick="FLOW.confirmPainPoints()">Lock these in &#8594;</button>
 
       <div class="loading hidden" id="loadingQuestions">
         <div class="spinner"></div>
@@ -418,7 +418,7 @@
       <p class="angle-text" id="angleText"></p>
     </div>
 
-    <button class="btn-primary hidden" id="approveBtn" onclick="approveBrief()">This is my argument. Build on it &#8594;</button>
+    <button class="btn-primary hidden" id="approveBtn" onclick="FLOW.approveBrief()">This is my argument. Build on it &#8594;</button>
 
     <div class="loading hidden" id="loadingBullets">
       <div class="spinner"></div>
@@ -463,7 +463,7 @@
         placeholder="Context, constraints, or evidence your CV doesn't capture — anything that would help us make a stronger case for you."></textarea>
     </div>
 
-    <button class="btn-primary" onclick="proceedToTexture()">Continue &#8594;</button>
+    <button class="btn-primary" onclick="FLOW.proceedToTexture()">Continue &#8594;</button>
     <p class="hint-text" style="margin-top:8px;">Everything here is optional. Continue when you're ready.</p>
   </section>
 
@@ -511,7 +511,7 @@
       <p class="hint-text">Your selected assets don't need a writing sample — we'll build from your CV and brief directly.</p>
     </div>
 
-    <button class="btn-primary" onclick="proceedToChoosePath()">Continue &#8594;</button>
+    <button class="btn-primary" onclick="FLOW.proceedToChoosePath()">Continue &#8594;</button>
   </section>
 
   <div class="step-collapsed hidden" id="step4Collapsed">
@@ -540,8 +540,8 @@
     <div class="field-group">
       <label class="field-label">How would you like to add the form questions?</label>
       <div class="toggle-row">
-        <button class="toggle-btn active" id="formPasteBtn" onclick="switchFormMethod('paste')">Paste questions</button>
-        <button class="toggle-btn"        id="formImageBtn" onclick="switchFormMethod('image')">Upload screenshot</button>
+        <button class="toggle-btn active" id="formPasteBtn" onclick="FLOW.switchFormMethod('paste')">Paste questions</button>
+        <button class="toggle-btn"        id="formImageBtn" onclick="FLOW.switchFormMethod('image')">Upload screenshot</button>
       </div>
     </div>
 
@@ -552,20 +552,20 @@
 
     <div id="formImageArea" class="field-group hidden">
       <label class="upload-zone" id="formImageZone"
-        ondragover="handleDragOver(event,'formImageZone')"
-        ondragleave="handleDragLeave(event,'formImageZone')"
-        ondrop="handleDropFormImage(event)">
+        ondragover="FLOW.handleDragOver(event,'formImageZone')"
+        ondragleave="FLOW.handleDragLeave(event,'formImageZone')"
+        ondrop="FLOW.handleDropFormImage(event)">
         <span class="upload-icon">&#8679;</span>
         <span class="upload-label">Drop a screenshot of the application form here</span>
         <span class="upload-hint">.jpg  .jpeg  .png</span>
-        <input type="file" id="formImageFile" accept=".jpg,.jpeg,.png" onchange="handleFormImage(event)" style="display:none">
+        <input type="file" id="formImageFile" accept=".jpg,.jpeg,.png" onchange="FLOW.handleFormImage(event)" style="display:none">
       </label>
       <div class="upload-status hidden" id="formImageStatus"></div>
     </div>
 
     <p class="hint-text" style="margin-top:8px;">We extract every question and answer each one from your CV and brief. You review before using.</p>
 
-    <button class="btn-primary" onclick="proceedFromForm()">Continue &#8594;</button>
+    <button class="btn-primary" onclick="FLOW.proceedFromForm()">Continue &#8594;</button>
     <p class="hint-text" style="margin-top:6px;">Form answers are generated at the end — alongside your other assets.</p>
   </section>
 
@@ -609,7 +609,7 @@
       </div>
     </div>
 
-    <button class="btn-primary" id="generateBtn" onclick="generateAssets()">Build &#8594;</button>
+    <button class="btn-primary" id="generateBtn" onclick="FLOW.generateAssets()">Build &#8594;</button>
 
     <div class="loading hidden" id="loadingGenerate">
       <div class="spinner"></div>
@@ -656,7 +656,7 @@
 
       <!-- Done button — triggers rating -->
       <div id="doneSection">
-        <button class="btn-primary" onclick="showRating()" style="margin-top:16px;">
+        <button class="btn-primary" onclick="FLOW.showRating()" style="margin-top:16px;">
           Done with this application &#8594;
         </button>
       </div>
@@ -674,16 +674,16 @@
             placeholder="Anything that felt off, generic, or missed the mark…"></textarea>
         </div>
 
-        <button class="btn-primary" onclick="submitRating()" style="margin-top:12px;">Submit &#8594;</button>
+        <button class="btn-primary" onclick="FLOW.submitRating()" style="margin-top:12px;">Submit &#8594;</button>
       </div>
 
       <!-- Post-rating paths — hidden until rating submitted -->
       <div class="rating-paths hidden" id="ratingPaths">
         <p class="rating-thankyou">Thank you. Every rating makes the next output sharper.</p>
         <div class="end-moment-actions">
-          <button class="btn-primary" onclick="resetAll()">&#8635; Start a new application</button>
+          <button class="btn-primary" onclick="FLOW.resetAll()">&#8635; Start a new application</button>
         </div>
-        <button class="reset-link" onclick="showSuggestions()" style="margin-top:12px;display:block;">
+        <button class="reset-link" onclick="FLOW.showSuggestions()" style="margin-top:12px;display:block;">
           Share a suggestion for us
         </button>
       </div>
@@ -692,7 +692,7 @@
       <div class="hidden" id="suggestionsSection" style="margin-top:16px;">
         <textarea class="textarea" id="suggestionsText" rows="3"
           placeholder="What would you want this product to do that it doesn't yet?"></textarea>
-        <button class="btn-secondary" onclick="submitSuggestion()" style="margin-top:8px;">Send</button>
+        <button class="btn-secondary" onclick="FLOW.submitSuggestion()" style="margin-top:8px;">Send</button>
       </div>
     </div>
   </section>
