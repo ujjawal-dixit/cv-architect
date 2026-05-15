@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Outreach Architect — reframe your worth. Turn your CV and a job description into a complete, personalised application package built from evidence, not templates.">
+<meta name="theme-color" content="#1a1a1a">
 <title>Outreach Architect</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,37 +31,37 @@
     <div class="sidebar-brand">Outreach Architect</div>
     <div class="sidebar-steps">
 
-      <div class="sidebar-step todo" id="srail1" data-step="1" onclick="sidebarStepClick(1)">
+      <div class="sidebar-step todo" id="srail1" data-step="1" onclick="FLOW.sidebarStepClick(1)">
         <span class="srail-num">01</span>
         <div class="srail-label"><span class="srail-name">Your Story</span></div>
         <div class="srail-check hidden">✓</div>
       </div>
 
-      <div class="sidebar-step todo" id="srail2" data-step="2" onclick="sidebarStepClick(2)">
+      <div class="sidebar-step todo" id="srail2" data-step="2" onclick="FLOW.sidebarStepClick(2)">
         <span class="srail-num">02</span>
         <div class="srail-label"><span class="srail-name">Set Role</span></div>
         <div class="srail-check hidden">✓</div>
       </div>
 
-      <div class="sidebar-step todo" id="srail3" data-step="3" onclick="sidebarStepClick(3)">
+      <div class="sidebar-step todo" id="srail3" data-step="3" onclick="FLOW.sidebarStepClick(3)">
         <span class="srail-num">03</span>
         <div class="srail-label"><span class="srail-name">Read Truth</span></div>
         <div class="srail-check hidden">✓</div>
       </div>
 
-      <div class="sidebar-step todo" id="srail35" data-step="3.5" onclick="sidebarStepClick(3.5)">
+      <div class="sidebar-step todo" id="srail35" data-step="3.5" onclick="FLOW.sidebarStepClick(3.5)">
         <span class="srail-num">03.5</span>
         <div class="srail-label"><span class="srail-name">Sharpen</span></div>
         <div class="srail-check hidden">✓</div>
       </div>
 
-      <div class="sidebar-step todo" id="srail4" data-step="4" onclick="sidebarStepClick(4)">
+      <div class="sidebar-step todo" id="srail4" data-step="4" onclick="FLOW.sidebarStepClick(4)">
         <span class="srail-num">04</span>
         <div class="srail-label"><span class="srail-name">Your Voice</span></div>
         <div class="srail-check hidden">✓</div>
       </div>
 
-      <div class="sidebar-step todo" id="srail5" data-step="5" onclick="sidebarStepClick(5)">
+      <div class="sidebar-step todo" id="srail5" data-step="5" onclick="FLOW.sidebarStepClick(5)">
         <span class="srail-num">05</span>
         <div class="srail-label"><span class="srail-name">Assets</span></div>
         <div class="srail-check hidden">✓</div>
@@ -186,8 +188,16 @@
 
     <p class="hint-text">If your CV uses columns or tables, paste the text version — formatting can interfere with extraction.</p>
 
-    <!-- ATS extraction note — shown after file upload, not on paste -->
+    <!-- ATS extraction note + extracted text preview — shown after file upload -->
     <div class="cv-extraction-note hidden" id="cvExtractionNote"></div>
+    <div class="hidden" id="cvExtractedPreview" style="margin-top:8px;">
+      <label class="field-label" style="font-size:11px;color:var(--text4);margin-bottom:6px;display:block;">
+        Extracted text — review and edit if anything looks wrong
+      </label>
+      <textarea class="textarea" id="cvExtractedText" rows="6"
+        style="font-size:12px;font-family:var(--font-ui);color:var(--text3);line-height:1.5;"
+        placeholder="Extracted CV text will appear here…"></textarea>
+    </div>
 
     <button class="btn-primary" onclick="FLOW.completeStep1()">Continue &#8594;</button>
   </section>
@@ -200,7 +210,7 @@
       </div>
       <div class="collapsed-right">
         <span class="collapsed-summary" id="step1Summary">Story loaded</span>
-        <button class="edit-btn" onclick="editStep('step1','step1Collapsed')">Edit</button>
+        <button class="edit-btn" onclick="FLOW.editStep('step1','step1Collapsed')">Edit</button>
       </div>
     </div>
   </div>
@@ -271,9 +281,9 @@
 
     <div id="jdUploadArea" class="field-group hidden">
       <label class="upload-zone" id="jdUploadZone"
-        ondragover="handleDragOver(event,'jdUploadZone')"
-        ondragleave="handleDragLeave(event,'jdUploadZone')"
-        ondrop="handleDrop(event,'jd')">
+        ondragover="FLOW.handleDragOver(event,'jdUploadZone')"
+        ondragleave="FLOW.handleDragLeave(event,'jdUploadZone')"
+        ondrop="FLOW.handleDrop(event,'jd')">
         <span class="upload-icon">&#8679;</span>
         <span class="upload-label">Drop the job description PDF here or click to browse</span>
         <span class="upload-hint">.pdf</span>
@@ -333,11 +343,14 @@
         <p class="hint-text" style="color:var(--warn);">Wrong? Fix it here — company and role flow through every asset we build.</p>
       </div>
 
-      <!-- Briefing -->
-      <details class="briefing-accordion" id="briefingAccordion" style="margin-top:12px;">
-        <summary>What we found about this company &#8595;</summary>
+      <!-- Company briefing — shown expanded by default after research -->
+      <div class="briefing-accordion hidden" id="companyBriefing" style="margin-top:12px;">
+        <div class="briefing-header" onclick="this.parentElement.querySelector('.briefing-body').classList.toggle('hidden');this.querySelector('.briefing-arrow').textContent=this.parentElement.querySelector('.briefing-body').classList.contains('hidden')?'↓':'↑'">
+          <span>What we found about this company</span>
+          <span class="briefing-arrow">↑</span>
+        </div>
         <div class="briefing-body" id="briefingBody"></div>
-      </details>
+      </div>
     </div>
 
     <!-- Step 2c: Pain points — shown after confirmation -->
@@ -386,7 +399,7 @@
       </div>
       <div class="collapsed-right">
         <span class="collapsed-summary" id="step2Summary">Role set</span>
-        <button class="edit-btn" onclick="editStep('step2','step2Collapsed')">Edit</button>
+        <button class="edit-btn" onclick="FLOW.editStep('step2','step2Collapsed')">Edit</button>
       </div>
     </div>
   </div>
@@ -436,7 +449,7 @@
       </div>
       <div class="collapsed-right">
         <span class="collapsed-summary">Truth Read</span>
-        <button class="edit-btn" onclick="editStep('step3','step3Collapsed')">Edit</button>
+        <button class="edit-btn" onclick="FLOW.editStep('step3','step3Collapsed')">Edit</button>
       </div>
     </div>
   </div>
@@ -475,7 +488,7 @@
       </div>
       <div class="collapsed-right">
         <span class="collapsed-summary">Truth Sharpened</span>
-        <button class="edit-btn" onclick="editStep('step35','step35Collapsed')">Edit</button>
+        <button class="edit-btn" onclick="FLOW.editStep('step35','step35Collapsed')">Edit</button>
       </div>
     </div>
   </div>
@@ -522,7 +535,7 @@
       </div>
       <div class="collapsed-right">
         <span class="collapsed-summary">Texture Defined</span>
-        <button class="edit-btn" onclick="editStep('step4','step4Collapsed')">Edit</button>
+        <button class="edit-btn" onclick="FLOW.editStep('step4','step4Collapsed')">Edit</button>
       </div>
     </div>
   </div>
@@ -577,7 +590,7 @@
       </div>
       <div class="collapsed-right">
         <span class="collapsed-summary" id="step425Summary">Form ready</span>
-        <button class="edit-btn" onclick="editStep('step425','step425Collapsed')">Edit</button>
+        <button class="edit-btn" onclick="FLOW.editStep('step425','step425Collapsed')">Edit</button>
       </div>
     </div>
   </div>
