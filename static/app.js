@@ -258,12 +258,19 @@ const UI = (() => {
     { stage: 'Finding the strategic intersection…', sub: 'Where your background meets their specific problem' },
     { stage: 'Writing the argument…',               sub: 'The narrative thread that runs through every asset' },
   ];
-  const generateStages = assets => [
-    { stage: 'Starting with the brief you approved…', sub: '' },
-    { stage: `Building ${assets[0] || 'your assets'}…`, sub: 'Specific to this company and this argument' },
-    { stage: assets[1] ? `Building ${assets[1]}…` : 'Evaluating specificity…', sub: '' },
-    { stage: 'Scoring for specificity and alignment…',  sub: 'Almost ready' },
-  ];
+
+  /** Generate personalised stage messages using candidate name and company */
+  const generateStages = assets => {
+    const name    = STATE.get('brief')?.candidate_name || '';
+    const company = STATE.get('brief')?.company || '';
+    const firstName = name ? name.split(' ')[0] : '';
+    return [
+      { stage: 'Starting with the brief you approved…', sub: '' },
+      { stage: assets[0] ? `Building ${assets[0]}…`    : 'Building your assets…', sub: firstName && company ? `Specific to ${firstName}'s case at ${company}` : 'Specific to this company and this argument' },
+      { stage: assets[1] ? `Building ${assets[1]}…`    : 'Evaluating specificity…', sub: company ? `Traceable to the argument ${company} most needs to hear` : '' },
+      { stage: 'Scoring for specificity and alignment…', sub: 'Almost ready' },
+    ];
+  };
 
   // ── Elevator navigation ────────────────────────────────────────────────────
   const STEP_ORDER = [1, 2, 3, 3.5, 4, 5];
@@ -549,9 +556,14 @@ const RENDERERS = (() => {
       });
       gapPairs.forEach(p => {
         if (!p.bring || /^none$/i.test(p.bring)) return;
+        const gapHandled = STATE.get('brief')?.gaps_to_address && !STATE.get('brief').gaps_to_address.toLowerCase().includes('none');
         rows += `<div class="fit-table-row">
           <div class="fit-col fit-col-need">${escHtml(p.need)}</div>
-          <div class="fit-col fit-col-bring"><span class="fit-signal fit-gap"></span><span class="fit-gap-text">${escHtml(p.bring)}</span></div></div>`;
+          <div class="fit-col fit-col-bring">
+            <span class="fit-signal fit-gap"></span>
+            <div><span class="fit-gap-text">${escHtml(p.bring)}</span>
+            ${gapHandled ? '<br><span class="fit-gap-handled">↳ Addressed in your assets</span>' : ''}</div>
+          </div></div>`;
       });
     } else {
       matchBullets.forEach(m => {
@@ -847,9 +859,14 @@ const RENDERERS = (() => {
       const fM = block.match(/^FIELD:\s*(.+?)(?=\nANSWER:|$)/s);
       const aM = block.match(/^ANSWER:\s*([\s\S]+?)$/s);
       if (!fM) return;
+      const question = fM[1].trim();
+      const answer   = aM ? aM[1].trim() : '';
+      // Answer is the hero. Question is the label above it.
+      // Deliberately inverted from the old all-caps label treatment.
       html += `<div class="form-answer-card">
-        <div class="form-answer-field">${escHtml(fM[1].trim())}</div>
-        <div class="form-answer-text">${safeText(aM ? aM[1].trim() : '')}</div></div>`;
+        <p class="form-answer-question">${safeText(question)}</p>
+        <div class="form-answer-body">${safeText(answer) || '<em style="color:var(--text4);">No answer generated.</em>'}</div>
+      </div>`;
     });
     return html + `</div>`;
   }
@@ -938,7 +955,7 @@ const RENDERERS = (() => {
 
     const copyBtn = `<button class="btn-ghost" onclick="FLOW.copyAsset('${cfg.rawId}')">Copy</button>`;
     const dlBtn   = asset === 'Cover Letter'
-      ? `<button class="btn-ghost" onclick="FLOW.downloadPDF('${cfg.rawId}')">Download PDF</button>` : '';
+      ? `<button class="btn-ghost" onclick="FLOW.downloadPDF('${cfg.rawId}', this)">Download PDF</button>` : '';
 
     let rethinkSection = '';
     if (asset === 'Cover Letter' && routingOpts?.opening_options?.length > 1) {
@@ -967,7 +984,7 @@ const RENDERERS = (() => {
         <div class="refinement-note hidden" id="refineNote-${cfg.id}"></div>
         <textarea class="textarea" id="feedback-${cfg.id}" rows="2" placeholder="Or describe what to change…"></textarea>
         <button class="btn-secondary" style="margin-top:8px;"
-          onclick="FLOW.refineAsset('${asset}','${cfg.id}','${cfg.rawId}')">&#8635; Refine</button>
+          onclick="FLOW.refineAsset('${asset}','${cfg.id}','${cfg.rawId}',this)">&#8635; Refine</button>
       </div>`;
   }
 
@@ -1162,6 +1179,15 @@ const FLOW = (() => {
           const wc = data.text.split(/\s+/).length;
           if (statusEl) statusEl.textContent = `✓ ${file.name} — ${wc} words extracted`;
           UI.showATSExtractionNote(wc);
+          // Show extracted text so user can verify - this is the ATS moment
+          const previewEl = DOM.el('cvExtractedPreview');
+          const previewText = DOM.el('cvExtractedText');
+          if (previewEl && previewText) {
+            previewText.value = data.text;
+            previewEl.classList.remove('hidden');
+            // Sync edits back to state
+            previewText.addEventListener('input', () => STATE.set('cvText', previewText.value), { once: false });
+          }
         } else {
           STATE.set('jdText', data.text);
           if (statusEl) statusEl.textContent = `✓ ${file.name} — ${data.text.split(/\s+/).length} words extracted`;
@@ -1551,7 +1577,18 @@ const FLOW = (() => {
       btn.addEventListener('click', () => _switchTab(cfg.id)); tabsRow.appendChild(btn);
       const panel = document.createElement('div');
       panel.className = 'tab-panel' + (i === 0 ? ' active' : ''); panel.id = `tab-${cfg.id}`;
-      panel.innerHTML = RENDERERS.tabPanel(asset, cfg, rawText, evalData, STATE.get('letterBrief'), STATE.get('routingOptions'), STATE.get('routingChoices').opening);
+      // Error boundary — a broken renderer cannot break sibling tabs
+      try {
+        panel.innerHTML = RENDERERS.tabPanel(asset, cfg, rawText, evalData, STATE.get('letterBrief'), STATE.get('routingOptions'), STATE.get('routingChoices').opening);
+      } catch (renderErr) {
+        console.error('Renderer failed for ' + asset + ':', renderErr);
+        panel.innerHTML = '<div style="padding:20px;color:var(--text3);font-family:var(--font-ui);font-size:13px;">' +
+          '<p style="margin-bottom:12px;">Something went wrong rendering this asset — raw text below.</p>' +
+          '<textarea style="width:100%;min-height:200px;font-size:12px;line-height:1.6;padding:12px;background:var(--card-raised);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-ui);" readonly>' +
+          DOM.escHtml(rawText) + '</textarea>' +
+          '<div style="margin-top:12px;"><button class="btn-ghost" onclick="navigator.clipboard.writeText(this.parentNode.querySelector(\'textarea\').value).then(()=>UI.showToast(\'Copied ✓\'))">Copy</button></div>' +
+          '</div>';
+      }
       tabPanels.appendChild(panel);
       const rawEl = el(cfg.rawId); if (rawEl) rawEl.value = rawText;
     });
@@ -1572,12 +1609,12 @@ const FLOW = (() => {
     UI.showToast(`Focused on ${paragraph} — describe what you want to change`);
   }
 
-  async function refineAsset(asset, tabId, rawId) {
+  async function refineAsset(asset, tabId, rawId, btnEl) {
     const feedback = val(`feedback-${tabId}`), currentText = el(rawId)?.value;
     if (!currentText) { UI.showToast('Nothing to refine yet.'); return; }
     if (!feedback)    { UI.showToast('Describe what you want changed first.'); return; }
     const docEl = el(`outputDoc-${tabId}`), diagEl = el(`diagDisplay-${tabId}`), noteEl = el(`refineNote-${tabId}`);
-    const refineBtn = window.event?.target;
+    const refineBtn = btnEl || null;
     if (docEl) docEl.classList.add('refining');
     if (refineBtn) { refineBtn.disabled = true; refineBtn.textContent = 'Diagnosing…'; }
     if (diagEl) { diagEl.innerHTML = `<div class="diag-loading">Reading to find exactly what to change…</div>`; diagEl.classList.remove('hidden'); }
@@ -1647,9 +1684,9 @@ const FLOW = (() => {
     navigator.clipboard.writeText(v).then(() => UI.showToast('Copied to clipboard ✓')).catch(() => UI.showToast('Copy failed — try selecting the text manually'));
   }
 
-  async function downloadPDF(rawId) {
+  async function downloadPDF(rawId, btnEl) {
     const rawEl = el(rawId); if (!rawEl?.value) { UI.showToast('Nothing to download yet.'); return; }
-    const btn = window.event?.target; const orig = btn?.textContent;
+    const btn = btnEl || null; const orig = btn?.textContent;
     if (btn) { btn.textContent = 'Preparing…'; btn.disabled = true; }
     try {
       const res = await API.downloadPdf(rawEl.value, STATE.get('brief').candidate_name||'', STATE.get('brief').company||'');
