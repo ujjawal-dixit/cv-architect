@@ -592,8 +592,17 @@ Parse this CV into a structured brief. This is the foundation
 of the entire application pipeline. Everything built afterward
 references this parsing — not the raw CV text.
 
-Extract with precision. Do not inflate. Do not infer beyond
-what the text supports. If a field has no evidence, output NONE.
+CRITICAL STANDARD FOR EVERY ACHIEVEMENT FIELD:
+Each achievement must contain:
+1. A specific metric (number, percentage, revenue figure, timeline)
+2. The mechanism (what the candidate actually did)
+3. Context (which company, product, or team)
+
+WRONG: "Led product growth initiatives"
+RIGHT: "Built and A/B tested Builder Outreach MVP — 3x response lift, 12 greenfield deals, INR 2.68 crore ARR"
+
+If the CV contains numbers, use them exactly. Do not round, soften, or generalise.
+If a field has no evidence, output NONE — do not fabricate.
 
 CV TEXT:
 {cv_text[:4000]}
@@ -603,17 +612,17 @@ CANDIDATE_NAME: [full name from top of CV]
 CURRENT_ROLE: [most recent job title + company + approximate tenure]
 PREVIOUS_ROLES: [prior 2-3 roles, one line each, format: Title at Company (Year-Year)]
 CAREER_ARC: [one sentence describing the trajectory — growing specialist, generalist pivot, etc.]
-TOP_ACHIEVEMENT_1: [strongest measurable achievement — specific metric + mechanism + context]
-TOP_ACHIEVEMENT_2: [second strongest — same standard]
-TOP_ACHIEVEMENT_3: [third strongest — same standard]
+TOP_ACHIEVEMENT_1: [strongest measurable achievement — exact metric + mechanism + company context]
+TOP_ACHIEVEMENT_2: [second strongest — same standard, different achievement]
+TOP_ACHIEVEMENT_3: [third strongest — same standard, different achievement]
 ALL_METRICS: [every number that appears in the CV — percentages, revenue, team sizes, timelines]
-STRONGEST_SKILL: [the one capability most consistently demonstrated across roles]
+STRONGEST_SKILL: [the one capability most consistently demonstrated across roles — specific, not generic]
 UNDERSOLD_SIGNALS: [achievements described without metrics or vaguely — targets for Step 3.5 questions]
 SKILLS_AND_TOOLS: [explicit list of technologies, methodologies, domain knowledge]
 EDUCATION: [degree, institution, year — one line]
 GAPS_IN_TIMELINE: [any gaps between roles, or NONE]
 CAREER_TRANSITIONS: [any industry or function changes, or NONE]""",
-            max_tokens=800, quality="fast"
+            max_tokens=900, quality="high"  # 70b — foundation of entire pipeline, quality non-negotiable
         )
         parsed = {}
         for field in ['CANDIDATE_NAME','CURRENT_ROLE','PREVIOUS_ROLES','CAREER_ARC',
@@ -1272,6 +1281,43 @@ CANDIDATE_VOICE_SIGNAL: [most distinctive phrase from candidate's own words — 
                       'STRONGEST_SKILL','UNDERSOLD_QUALITY','CAREER_NARRATIVE',
                       'REFRAME_NEEDED','CANDIDATE_VOICE_SIGNAL']:
             brief[field.lower()] = parse_field(p1, field)
+
+        # Validation gate — if top achievement contains no number, it's generic.
+        # One retry with explicit specificity instruction. Only fires when output is provably weak.
+        import re as _re
+        ach1 = brief.get('top_achievement_1', '')
+        if ach1 and ach1 != 'NONE' and not _re.search(r'\d', ach1):
+            try:
+                p1_retry = llm(
+                    f"""{LEVEL_1}
+
+The previous extraction produced a generic achievement with no specific numbers.
+This is the foundation of the cover letter — generic input produces generic output.
+
+CV TEXT:
+{cv_summary}
+
+The candidate's metrics from their CV (use these exactly):
+{brief.get('all_metrics', 'Extract all numbers from the CV above.')}
+
+Re-extract these fields with SPECIFIC numbers, names, and mechanisms.
+Every achievement field must contain at least one number.
+
+Output ONLY:
+TOP_ACHIEVEMENT_1: [metric + mechanism + company — must contain a number]
+TOP_ACHIEVEMENT_2: [metric + mechanism + company — must contain a number]
+TOP_ACHIEVEMENT_3: [metric + mechanism + company — must contain a number]
+CAREER_NARRATIVE: [one sentence — specific roles and through-line, no generic descriptors]
+STRONGEST_SKILL: [one capability with evidence, not just a label]""",
+                    max_tokens=400, quality="high"
+                )
+                for field in ['TOP_ACHIEVEMENT_1','TOP_ACHIEVEMENT_2','TOP_ACHIEVEMENT_3',
+                              'CAREER_NARRATIVE','STRONGEST_SKILL']:
+                    val = parse_field(p1_retry, field)
+                    if val and val != 'NONE':
+                        brief[field.lower()] = val
+            except Exception as e:
+                print(f"Brief P1 retry error (non-fatal): {e}")
     except Exception as e:
         print(f"Brief P1 error: {e}")
 
@@ -3529,6 +3575,7 @@ class RatingRequest(BaseModel):
 async def submit_rating(req: RatingRequest):
     try:
         import json, os
+        from datetime import datetime
         ratings_file = "ratings.jsonl"
         entry = {
             "ratings":   req.ratings,
@@ -3538,6 +3585,10 @@ async def submit_rating(req: RatingRequest):
             "narrative": req.narrative,
             "timestamp": req.timestamp,
         }
+        # Rotate at 5MB — preserves all data, prevents disk full on HuggingFace
+        if os.path.exists(ratings_file) and os.path.getsize(ratings_file) > 5 * 1024 * 1024:
+            ts = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+            os.rename(ratings_file, f"ratings_archived_{ts}.jsonl")
         with open(ratings_file, "a") as f:
             f.write(json.dumps(entry) + "\n")
         return {"ok": True}
