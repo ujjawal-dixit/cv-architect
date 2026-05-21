@@ -350,7 +350,27 @@ const UI = (() => {
     setTimeout(() => t.classList.add('hidden'), 5000);
   }
 
-  // ── ATS extraction note ────────────────────────────────────────────────────
+  /**
+   * Set a button into loading state — visual feedback that the click registered.
+   * Returns a restore function — call it when the operation completes.
+   * @param {HTMLElement|string} btnOrId
+   * @param {string} [loadingText='Working…']
+   * @returns {Function} restore
+   */
+  function setButtonLoading(btnOrId, loadingText = 'Working…') {
+    const btn = typeof btnOrId === 'string' ? DOM.el(btnOrId) : btnOrId;
+    if (!btn) return () => {};
+    const original = btn.textContent;
+    const wasDisabled = btn.disabled;
+    btn.disabled = true;
+    btn.textContent = loadingText;
+    btn.classList.add('btn-loading');
+    return () => {
+      btn.disabled = wasDisabled;
+      btn.textContent = original;
+      btn.classList.remove('btn-loading');
+    };
+  }
   function showATSExtractionNote(wordCount) {
     const e = DOM.el('cvExtractionNote');
     if (!e) return;
@@ -645,7 +665,7 @@ const RENDERERS = (() => {
           ${relevance ? `<div class="bullet-diag-relevance">↳ ${safeText(relevance)}</div>` : ''}
           ${needsEnrichment && questionsHtml ? `
             <div class="bullet-diag-questions">
-              <p class="bullet-diag-questions-label">Help us sharpen this</p>
+              <p class="bullet-diag-questions-label">One question — your answer strengthens the evidence in your cover letter</p>
               ${questionsHtml}
             </div>` : ''}
         </div>`;
@@ -660,18 +680,38 @@ const RENDERERS = (() => {
   }
 
   // ── Resume bullets ─────────────────────────────────────────────────────────
+  // ── PARSER TENET ─────────────────────────────────────────────────────────────
+  // All LLM output parsers in this codebase follow these rules:
+  // 1. Field label regexes are ALWAYS case-insensitive (/i flag)
+  // 2. Separators match 2+ of the separator character, not exactly 3
+  // 3. Every parser has a named fallback — never silently returns nothing
+  // 4. Internal labels (ROLE:, VERDICT:, SUMMARY:) are NEVER shown to the user
+  // These rules apply to every new parser added to this file.
+  // ─────────────────────────────────────────────────────────────────────────────
+
   function _parseBullets(raw) {
     const result = { rewritten:[], summary:'' };
     if (!raw) return result;
-    const sm = raw.match(/^SUMMARY:\s*(.+)$/m);
+
+    // Case-insensitive SUMMARY match
+    const sm = raw.match(/^SUMMARY:\s*(.+)$/im);
     if (sm) result.summary = sm[1].trim();
-    raw.split(/^---$/m).map(b => b.trim()).filter(Boolean).forEach(block => {
-      if (block.startsWith('SUMMARY:')) return;
-      const origM = block.match(/^ORIGINAL:\s*([\s\S]+?)(?=^REWRITTEN:|$)/m);
-      const rewM  = block.match(/^REWRITTEN:\s*([\s\S]+?)(?=^ARGUES:|$)/m);
-      const argM  = block.match(/^ARGUES:\s*([\s\S]+?)$/m);
+
+    // Separator: 2+ dashes with optional whitespace — handles ----, ---, — variations
+    raw.split(/^-{2,}\s*$/m).map(b => b.trim()).filter(Boolean).forEach(block => {
+      if (/^SUMMARY:/i.test(block)) return;
+
+      // Case-insensitive field matching — LLM may output Original: or ORIGINAL:
+      const origM = block.match(/^ORIGINAL:\s*([\s\S]+?)(?=^REWRITTEN:|$)/im);
+      const rewM  = block.match(/^REWRITTEN:\s*([\s\S]+?)(?=^ARGUES:|$)/im);
+      const argM  = block.match(/^ARGUES:\s*([\s\S]+?)$/im);
+
       if (!origM || !rewM) return;
-      result.rewritten.push({ original:origM[1].trim(), rewritten:rewM[1].trim(), proves:argM?argM[1].trim():'' });
+      result.rewritten.push({
+        original:  origM[1].trim(),
+        rewritten: rewM[1].trim(),
+        proves:    argM ? argM[1].trim() : '',
+      });
     });
     return result;
   }
@@ -1021,7 +1061,63 @@ const FLOW = (() => {
     4:'Step 4 — Your Voice', 4.25:'Step 4.25 — Form Questions', 5:'Step 5 — Build Assets',
   };
 
-  // ── Navigation ─────────────────────────────────────────────────────────────
+  // ── Dynamic step subtitles ────────────────────────────────────────────────────
+  // Every step subtitle updates based on what we know about this candidate + company.
+  // Called after key state changes — after CV parse, after research, after brief.
+  // Personalisation makes the product feel like it's reading this specific situation,
+  // not running a generic flow.
+  function updateStepSubtitles() {
+    const brief     = STATE.get('brief') || {};
+    const parsedCv  = STATE.get('parsedCv') || {};
+    const company   = brief.company    || '';
+    const role      = brief.job_title  || '';
+    const firstName = (brief.candidate_name || parsedCv.candidate_name || '').split(' ')[0];
+    const assets    = STATE.get('selectedAssets') || [];
+    const needs     = STATE.get('flowNeeds') || {};
+
+    // Step 0 — after asset selection
+    if (assets.length > 0) {
+      DOM.setText('step0Sub', `${assets.length} asset${assets.length > 1 ? 's' : ''} selected. We build only what you need.`);
+    }
+
+    // Step 1 — after CV parse
+    if (firstName) {
+      DOM.setText('step1Sub', `${firstName}'s CV loaded. The more complete it is, the sharper we argue.`);
+    }
+
+    // Step 2 — after company detected
+    if (company && role) {
+      DOM.setText('step2Sub', `Decoding what ${company} actually needs for ${role}.`);
+    } else if (company) {
+      DOM.setText('step2Sub', `Decoding what ${company} actually needs.`);
+    }
+
+    // Step 3 — after brief assembled
+    const nt = brief.narrative_thread || '';
+    if (nt) {
+      DOM.setText('step3Sub', 'Read what we found. The argument below runs through every asset.');
+    } else if (company) {
+      DOM.setText('step3Sub', `The argument for ${company} is being assembled. Approve it to continue.`);
+    }
+
+    // Step 3.5 — bullet diagnosis context
+    const gaps = brief.gaps_to_address || '';
+    if (gaps && gaps.toUpperCase() !== 'NONE') {
+      DOM.setText('step35Sub', 'One question per bullet. Your answer strengthens the evidence in your cover letter.');
+    }
+
+    // Step 4 — voice context
+    if (!needs.voice) {
+      DOM.setText('step4Sub', "Your selected assets don't need a writing sample — continue when ready.");
+    } else if (firstName) {
+      DOM.setText('step4Sub', `Optional — but a writing sample makes ${firstName}'s voice distinct in every asset.`);
+    }
+
+    // Step 5 — after generation
+    if (company && assets.length > 0) {
+      DOM.setText('step5Sub', `${assets.length} asset${assets.length > 1 ? 's' : ''} built from one brief. Specific to ${company}. Each scored, each refinable.`);
+    }
+  }
   function collapseStep(stepId, collapsedId) { hide(stepId); show(collapsedId); }
 
   function activateStep(stepId) {
@@ -1143,6 +1239,7 @@ const FLOW = (() => {
       }
       tag.textContent = `Building: ${summary}`;
     }
+    updateStepSubtitles();
     hide('step0'); activateStep('step1'); updateProgress(1);
   }
 
@@ -1205,7 +1302,23 @@ const FLOW = (() => {
   }
 
   async function completeStep1() {
-    const cv = STATE.get('cvMethod') === 'paste' ? val('cvText') : STATE.get('cvText');
+    // ── Input resolution — active method always wins ──────────────────────────
+    // Architecture decision: read from the active input at the moment of Continue.
+    // This prevents stale state from a previous upload/paste session from
+    // silently polluting the pipeline with the wrong CV.
+    let cv = '';
+    const method = STATE.get('cvMethod');
+    if (method === 'paste') {
+      const pasteVal = val('cvText');
+      if (pasteVal.length >= 50) {
+        cv = pasteVal;
+        STATE.set('cvText', cv); // sync state to what user sees on screen
+      } else {
+        cv = STATE.get('cvText'); // empty paste — fall back to uploaded file if present
+      }
+    } else {
+      cv = STATE.get('cvText'); // upload mode — trust state set by _readFile
+    }
     if (!cv || cv.length < 50) { UI.showToast('Please add your CV before continuing — paste the text or upload a file.'); return; }
     if (cv.startsWith('%PDF') || cv.includes('endobj') || cv.includes('xref\n')) { UI.showToast('This looks like a raw PDF — please use the upload button or paste the text.'); return; }
     STATE.set('cvText', cv);
@@ -1220,6 +1333,7 @@ const FLOW = (() => {
         STATE.set('parsedCv', data.parsed_cv); STATE.enrichBrief({ parsed_cv: data.parsed_cv });
         const pn = data.parsed_cv.candidate_name;
         if (pn && pn !== 'NONE' && pn.length > 2) { setText('step1Summary', pn); STATE.enrichBrief({ candidate_name: pn }); }
+        updateStepSubtitles();
       }
     } catch (e) { console.warn('CV parsing failed (non-blocking):', e.message); }
   }
@@ -1290,13 +1404,14 @@ const FLOW = (() => {
     STATE.set('jdText', jd);
     const manualCompany = val('manualCompany');
     advanceFlowStage(2); show('loadingResearch'); hide('orgRoleConfirm'); hide('painPointsSection');
-    const researchBtn = el('researchBtn'); if (researchBtn) researchBtn.disabled = true;
+    const researchBtn = el('researchBtn');
+    const restoreResearch = UI.setButtonLoading(researchBtn, 'Decoding this role…');
     const stageTimer = UI.runStages(UI.RESEARCH_STAGES, 'researchStage', 'researchSubstage', 'rs', 6000);
 
     try {
       const data = await API.runResearch(STATE.get('cvText'), jd, manualCompany);
       clearInterval(stageTimer); hide('loadingResearch');
-      if (researchBtn) researchBtn.disabled = false;
+      restoreResearch();
 
       if (data.error === 'company_not_found') {
         advanceFlowStage(1);
@@ -1324,11 +1439,12 @@ const FLOW = (() => {
 
       const orgField = el('manualCompany'); if (orgField && !orgField.value) orgField.value = company;
       setText('step2Summary', `${company||'—'} · ${jobTitle||'—'}`);
+      updateStepSubtitles();
       UI.showMomentum('🔍 Decoded', `${company||'Company'} · ${jobTitle||'Role'} — here's what they actually need.`, '', 4000);
 
     } catch (e) {
       clearInterval(stageTimer); hide('loadingResearch'); advanceFlowStage(1);
-      if (researchBtn) researchBtn.disabled = false;
+      restoreResearch();
       UI.showToast(API.userMessage(e));
     }
   }
@@ -1336,11 +1452,66 @@ const FLOW = (() => {
   function renderPainPoints(points) {
     const list = el('painPointsList'); if (!list) return;
     list.innerHTML = ''; STATE.set('selectedPainPoints', []); _updatePainCounter(0);
-    points.forEach(p => {
-      const clean = p.replace(/^\d+\.\s*/,'').replace(/\*\*([^*]+)\*\*/g,'$1').trim();
-      if (!clean || clean.length < 10) return;
-      const item = document.createElement('div'); item.className = 'pain-item';
-      item.innerHTML = `<span class="pain-item-text">${DOM.escHtml(clean)}</span>`;
+
+    // Build CV signal index for overlap detection
+    // Uses parsedCv fields already in state — no extra LLM call
+    const parsedCv   = STATE.get('parsedCv') || {};
+    const brief      = STATE.get('brief')    || {};
+    const cvSignals  = [
+      parsedCv.top_achievement_1, parsedCv.top_achievement_2, parsedCv.top_achievement_3,
+      parsedCv.strongest_skill, parsedCv.career_arc, parsedCv.skills_and_tools,
+      parsedCv.all_metrics, brief.strongest_overlap,
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    // Extract meaningful keywords from CV signals for matching
+    // Strips common filler words, keeps domain terms
+    const STOP_WORDS = new Set(['the','a','an','and','or','in','on','at','to','for',
+      'of','with','by','from','this','that','have','has','is','are','was','were',
+      'be','been','being','will','would','can','could','do','did','does']);
+
+    function extractKeywords(text) {
+      return text.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 3 && !STOP_WORDS.has(w));
+    }
+
+    const cvKeywords = extractKeywords(cvSignals);
+
+    function getOverlapStrength(painPoint) {
+      if (!cvKeywords.length) return 0;
+      const painKeywords = extractKeywords(painPoint);
+      // Count how many pain point keywords appear in the CV signal set
+      const matches = painKeywords.filter(kw =>
+        cvKeywords.some(cvKw => cvKw.includes(kw) || kw.includes(cvKw))
+      );
+      return matches.length / Math.max(painKeywords.length, 1);
+    }
+
+    // Score and annotate each pain point
+    const scored = points.map(p => {
+      const clean = p.replace(/^\d+\.\s*/, '').replace(/\*\*([^*]+)\*\*/g, '$1').trim();
+      return { clean, score: getOverlapStrength(clean) };
+    }).filter(p => p.clean.length >= 10);
+
+    // Only badge if there's meaningful overlap (score > 0.15 = at least 15% keyword overlap)
+    // We surface strength only — never show "Weak evidence" or similar discouraging labels
+    const STRONG_THRESHOLD = 0.25; // high confidence overlap
+    const GOOD_THRESHOLD   = 0.15; // some overlap
+
+    scored.forEach(({ clean, score }) => {
+      const item = document.createElement('div');
+      item.className = 'pain-item';
+
+      let badgeHtml = '';
+      if (score >= STRONG_THRESHOLD) {
+        badgeHtml = '<span class="pain-evidence-badge pain-evidence-strong">Strong evidence in your CV</span>';
+      } else if (score >= GOOD_THRESHOLD) {
+        badgeHtml = '<span class="pain-evidence-badge pain-evidence-good">Evidence in your CV</span>';
+      }
+      // Below GOOD_THRESHOLD: no badge shown — user doesn't know we checked
+
+      item.innerHTML = `<span class="pain-item-text">${DOM.escHtml(clean)}</span>${badgeHtml}`;
       item.addEventListener('click', () => _togglePainPoint(item, clean));
       list.appendChild(item);
     });
@@ -1380,7 +1551,8 @@ const FLOW = (() => {
     if (cc) STATE.enrichBrief({ company: cc }); if (cr) STATE.enrichBrief({ job_title: cr });
     STATE.enrichBrief({ selected_pain_points: STATE.get('selectedPainPoints'), user_instruction: val('userInstruction') });
     show('loadingQuestions');
-    const confirmBtn = el('confirmPainBtn'); if (confirmBtn) confirmBtn.disabled = true;
+    const confirmBtn = el('confirmPainBtn');
+    const restoreConfirm = UI.setButtonLoading(confirmBtn, 'Building your brief…');
     UI.showMomentum('✅ Argument set','These are your two. Everything we build will argue you can solve them.','',4000);
     if (STATE.get('parsedCv')) STATE.enrichBrief({ parsed_cv: STATE.get('parsedCv') });
     show('loadingBrief');
@@ -1388,11 +1560,12 @@ const FLOW = (() => {
     try {
       const data = await API.buildBrief(STATE.get('brief'), { bullet_qa:{}, anything_missed:'', open_field:'' });
       clearInterval(stageTimer); hide('loadingBrief'); hide('loadingQuestions');
-      if (confirmBtn) confirmBtn.disabled = false;
+      restoreConfirm();
       if (data.detail) { UI.showToast('Something went wrong building the brief — try again.'); return; }
       STATE.replaceBriefSafe(data.brief);
       const nt = data.narrative_thread || ''; STATE.set('narrativeThread', nt);
       if (nt) { setText('narrativeThread', nt); show('narrativeReveal'); }
+      updateStepSubtitles();
       if (data.gap_analysis) {
         const { html, angle } = RENDERERS.gapAnalysis(data.gap_analysis);
         setHtml('gapAnalysis', html);
@@ -1401,7 +1574,7 @@ const FLOW = (() => {
       collapseStep('step2','step2Collapsed'); activateStep('step3'); show('approveBtn'); updateProgress(3);
     } catch (e) {
       clearInterval(stageTimer); hide('loadingBrief'); hide('loadingQuestions');
-      if (confirmBtn) confirmBtn.disabled = false; UI.showToast(API.userMessage(e));
+      restoreConfirm(); UI.showToast(API.userMessage(e));
     }
   }
 
@@ -1533,7 +1706,8 @@ const FLOW = (() => {
     const selected = STATE.get('selectedAssets');
     if (!selected.length) { UI.showToast('Please select at least one asset.'); return; }
     show('loadingGenerate');
-    const generateBtn = el('generateBtn'); if (generateBtn) generateBtn.disabled = true;
+    const generateBtn = el('generateBtn');
+    const restoreGenerate = UI.setButtonLoading(generateBtn, 'Building your assets…');
     const regularAssets = selected.filter(a => a !== 'Answer Application Form');
     const formSelected  = selected.includes('Answer Application Form');
     const stageTimer = UI.runStages(UI.generateStages(regularAssets.length ? regularAssets : selected), 'generateStage','generateSubstage','gs',8000);
@@ -1549,16 +1723,17 @@ const FLOW = (() => {
           STATE.get('results')['form_answers'] = fd.answers || '';
         } catch (fe) { STATE.get('results')['form_answers'] = 'Form answering failed — please try again.'; }
       }
-      clearInterval(stageTimer); hide('loadingGenerate'); if (generateBtn) generateBtn.disabled = false; updateProgress(5);
+      clearInterval(stageTimer); hide('loadingGenerate'); restoreGenerate(); updateProgress(5);
       if (STATE.get('firstGenerate')) {
         STATE.set('firstGenerate', false);
         setText('momentumRevealText', `${selected.length} asset${selected.length!==1?'s':''} built from one brief. Specific to ${STATE.get('brief').company||'this company'} and traceable to the argument you approved.`);
         const rev = el('momentumReveal'); if (rev) { rev.classList.remove('hidden'); rev.classList.add('pulse-once'); }
       }
+      updateStepSubtitles();
       _buildTabs(selected, STATE.get('results'), STATE.get('evals'));
       setTimeout(() => show('endMoment'), 600);
     } catch (e) {
-      clearInterval(stageTimer); hide('loadingGenerate'); if (generateBtn) generateBtn.disabled = false;
+      clearInterval(stageTimer); hide('loadingGenerate'); restoreGenerate();
       UI.showToast(API.userMessage(e));
     }
   }
@@ -1760,7 +1935,7 @@ const FLOW = (() => {
   updateProgress(0);
 
   return {
-    collapseStep, activateStep, editStep, updateProgress, sidebarStepClick,
+    collapseStep, activateStep, editStep, updateProgress, sidebarStepClick, updateStepSubtitles,
     toggleAssetCard, toggleFullPackage, completeStep0,
     switchMethod, handleFile, handleDragOver, handleDragLeave, handleDrop, completeStep1,
     switchJdMethod, handleJdImage, handleDropJdImage, handleJdPdf, runResearch,
