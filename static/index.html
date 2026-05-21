@@ -97,7 +97,10 @@
     <div class="step-header">
       <p class="step-eyebrow">Start here</p>
       <h2 class="step-title">Reframe your worth.</h2>
-      <p class="step-subtitle">Select what you need. We build only that.</p>
+      <p class="step-subtitle" id="step0Sub">Select what you need. We build only that.</p>
+      <p class="step-proposition">
+        We read your CV and the job description together — find the one argument that connects them — and build every asset from that argument. Not templates. Not paraphrasing. A case made from your actual evidence.
+      </p>
     </div>
 
     <!-- Row 1: 3 cards -->
@@ -153,7 +156,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 1 of 5</span>
       <h2 class="step-title">Your Story</h2>
-      <p class="step-subtitle">Add your CV. Fuller is sharper.</p>
+      <p class="step-subtitle" id="step1Sub">Add your CV. Fuller is sharper.</p>
     </div>
 
     <div class="privacy-badge">
@@ -222,7 +225,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 2 of 5</span>
       <h2 class="step-title">Set Role</h2>
-      <p class="step-subtitle">Paste the full job description. We'll decode what they actually need.</p>
+      <p class="step-subtitle" id="step2Sub">Paste the full job description. We'll decode what they actually need.</p>
     </div>
 
     <!-- Stage indicator — makes the UX flow explicit -->
@@ -343,13 +346,21 @@
         <p class="hint-text" style="color:var(--warn);">Wrong? Fix it here — company and role flow through every asset we build.</p>
       </div>
 
-      <!-- Company briefing — shown expanded by default after research -->
+      <!-- Company briefing — shown expanded by default after research completes -->
+      <!-- div-based (not details) — controlled by show('companyBriefing') in FLOW -->
       <div class="briefing-accordion hidden" id="companyBriefing" style="margin-top:12px;">
-        <div class="briefing-header" onclick="this.parentElement.querySelector('.briefing-body').classList.toggle('hidden');this.querySelector('.briefing-arrow').textContent=this.parentElement.querySelector('.briefing-body').classList.contains('hidden')?'↓':'↑'">
+        <div class="briefing-header" onclick="
+          const body = this.nextElementSibling;
+          const arrow = this.querySelector('.briefing-arrow');
+          body.classList.toggle('hidden');
+          arrow.textContent = body.classList.contains('hidden') ? '↓' : '↑';
+        ">
           <span>What we found about this company</span>
           <span class="briefing-arrow">↑</span>
         </div>
-        <div class="briefing-body" id="briefingBody"></div>
+        <div class="briefing-body" id="briefingBody">
+          <!-- Populated by FLOW.runResearch() before show() is called -->
+        </div>
       </div>
     </div>
 
@@ -411,7 +422,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 3 — Read Truth</span>
       <h2 class="step-title">Read Truth</h2>
-      <p class="step-subtitle">The argument you approve here runs through every asset.</p>
+      <p class="step-subtitle" id="step3Sub">The argument you approve here runs through every asset.</p>
     </div>
 
     <!-- Narrative thread — the primary moment, serif, prominent -->
@@ -461,7 +472,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 3.5</span>
       <h2 class="step-title">Sharpen Truth</h2>
-      <p class="step-subtitle">Answer what you can. Every answer makes the output more precise.</p>
+      <p class="step-subtitle" id="step35Sub">Answer what you can. Every answer makes the output more precise.</p>
     </div>
 
     <div class="trust-line">Your answers are used to strengthen your assets. They never appear word-for-word.</div>
@@ -500,7 +511,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 4 of 5</span>
       <h2 class="step-title">Your Voice</h2>
-      <p class="step-subtitle">Two things — both optional, both change the output significantly.</p>
+      <p class="step-subtitle" id="step4Sub">Two things — both optional, both change the output significantly.</p>
     </div>
 
     <!-- Referral — shown when Cover Letter or Cold Outreach Email selected -->
@@ -547,7 +558,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Application Form</span>
       <h2 class="step-title">Your Form Questions</h2>
-      <p class="step-subtitle">Give us the form. We'll answer every field from your brief.</p>
+      <p class="step-subtitle" id="step425Sub">Give us the form. We'll answer every field from your brief.</p>
     </div>
 
     <div class="field-group">
@@ -646,7 +657,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 5 of 5</span>
       <h2 class="step-title">Build Assets</h2>
-      <p class="step-subtitle">Your assets. Built from the brief you approved. Each scored, each refinable.</p>
+      <p class="step-subtitle" id="step5Sub">Your assets. Built from the brief you approved. Each scored, each refinable.</p>
     </div>
 
     <!-- Peak moment — persistent, single pulse, never disappears (Peak-End Rule) -->
