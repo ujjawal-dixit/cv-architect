@@ -99,7 +99,7 @@
       <h2 class="step-title">Reframe your worth.</h2>
       <p class="step-subtitle" id="step0Sub">Select what you need. We build only that.</p>
       <p class="step-proposition">
-        We read your CV and the job description together — find the one argument that connects them — and build every asset from that argument. Not templates. Not paraphrasing. A case made from your actual evidence.
+        We read your CV and the JD together, find the one argument that connects them, and build every asset from that argument. The cover letter opens with your strongest result. The bullets are rewritten to prove it. The interview prep anticipates how to defend it.
       </p>
     </div>
 
@@ -156,7 +156,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 1 of 5</span>
       <h2 class="step-title">Your Story</h2>
-      <p class="step-subtitle" id="step1Sub">Add your CV. Fuller is sharper.</p>
+      <p class="step-subtitle" id="step1Sub">Add your CV — the more complete it is, the more precisely we can argue your case.</p>
     </div>
 
     <div class="privacy-badge">
@@ -173,7 +173,7 @@
     </div>
 
     <div id="cvPasteArea" class="field-group">
-      <textarea class="textarea" id="cvText" rows="10" placeholder="Your full CV goes here. We will find out what matters."></textarea>
+      <textarea class="textarea" id="cvText" rows="10" placeholder="Paste your full CV — work experience, achievements, metrics. We read between the lines."></textarea>
     </div>
 
     <div id="cvUploadArea" class="field-group hidden">
@@ -189,13 +189,13 @@
       <div class="upload-status hidden" id="cvFileStatus"></div>
     </div>
 
-    <p class="hint-text">If your CV uses columns or tables, paste the text version — formatting can interfere with extraction.</p>
+    <p class="hint-text">If your CV uses columns or tables, the text version gives us cleaner signal. Formatting disappears in ATS systems anyway.</p>
 
     <!-- ATS extraction note + extracted text preview — shown after file upload -->
     <div class="cv-extraction-note hidden" id="cvExtractionNote"></div>
     <div class="hidden" id="cvExtractedPreview" style="margin-top:8px;">
       <label class="field-label" style="font-size:11px;color:var(--text4);margin-bottom:6px;display:block;">
-        Extracted text — review and edit if anything looks wrong
+        Extracted text — this is exactly what an ATS reads from your file. Edit anything that looks wrong before continuing.
       </label>
       <textarea class="textarea" id="cvExtractedText" rows="6"
         style="font-size:12px;font-family:var(--font-ui);color:var(--text3);line-height:1.5;"
@@ -225,7 +225,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 2 of 5</span>
       <h2 class="step-title">Set Role</h2>
-      <p class="step-subtitle" id="step2Sub">Paste the full job description. We'll decode what they actually need.</p>
+      <p class="step-subtitle" id="step2Sub">Paste the full job description — we'll find what they actually need, not just what they listed.</p>
     </div>
 
     <!-- Stage indicator — makes the UX flow explicit -->
@@ -261,7 +261,7 @@
     </div>
 
     <div id="jdPasteArea" class="field-group">
-      <textarea class="textarea" id="jdText" rows="8" placeholder="Paste it in full. Every word tells us something."></textarea>
+      <textarea class="textarea" id="jdText" rows="8" placeholder="Paste the full JD — even the language they use tells us what they value. Don't summarise."></textarea>
     </div>
 
     <div id="jdImageArea" class="field-group hidden">
@@ -300,9 +300,9 @@
       </div>
     </div>
 
-    <!-- Company name — always visible, user can pre-fill -->
+    <!-- e.g. MakeMyTrip — always visible, user can pre-fill -->
     <div class="field-group" style="margin-top:4px;">
-      <label class="field-label" style="font-size:12px;color:var(--text3);">Company name <span style="font-weight:400;">— we detect this automatically, or enter it here</span></label>
+      <label class="field-label" style="font-size:12px;color:var(--text3);">Company name <span style="font-weight:400;">— we detect it from the JD, or type it here</span></label>
       <input class="input-text" id="manualCompany" type="text" placeholder="e.g. Google, Stripe, Monzo…">
     </div>
 
@@ -338,12 +338,12 @@
           <div class="confirm-field">
             <label class="confirm-field-label">Role</label>
             <div class="confirm-input-wrap">
-              <input class="input-text confirm-input" id="confirmedRole" type="text" placeholder="Job title">
+              <input class="input-text confirm-input" id="confirmedRole" type="text" placeholder="e.g. Product Manager">
               <span class="confirm-edit-hint">&#9998; edit</span>
             </div>
           </div>
         </div>
-        <p class="hint-text" style="color:var(--warn);">Wrong? Fix it here — company and role flow through every asset we build.</p>
+        <p class="hint-text" style="color:var(--warn);">Fix it if we got it wrong — company and role shape every sentence we write.</p>
       </div>
 
       <!-- Company briefing — shown expanded by default after research completes -->
@@ -367,8 +367,8 @@
     <!-- Step 2c: Pain points — shown after confirmation -->
     <div class="hidden" id="painPointsSection">
       <div class="field-group" style="margin-top:18px;">
-        <p class="field-label" style="margin-bottom:8px;">What we decoded they actually need — choose up to 2</p>
-        <p class="hint-text" style="margin-bottom:12px;">These become the spine of everything we build. Pick where your evidence is strongest.</p>
+        <p class="field-label" style="margin-bottom:8px;">What they actually need right now — choose the two where your evidence is strongest</p>
+        <p class="hint-text" style="margin-bottom:12px;">These two pain points become the argument. Every asset we build will prove you can solve them.</p>
 
         <div class="pain-counter">
           <div class="pain-counter-pips">
@@ -382,12 +382,12 @@
       </div>
 
       <button class="context-trigger hidden" id="contextTrigger" onclick="FLOW.showContext()">
-        + Anything the JD doesn't show?
+        + Know something about this company the JD doesn't say?
       </button>
       <div class="hidden" id="contextArea">
         <div class="field-group context-expanded">
-          <textarea class="textarea" id="userInstruction" rows="2" placeholder="e.g. The team is going through a transition — that context matters here."></textarea>
-          <p class="hint-text">Optional — insider context makes the difference between a good brief and a precise one.</p>
+          <textarea class="textarea" id="userInstruction" rows="2" placeholder="e.g. I spoke to their Head of Product last week — they're rebuilding the data stack from scratch."></textarea>
+          <p class="hint-text">What you know that we can't research. Your input here has more weight than anything we found online.</p>
         </div>
       </div>
 
@@ -422,7 +422,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 3 — Read Truth</span>
       <h2 class="step-title">Read Truth</h2>
-      <p class="step-subtitle" id="step3Sub">The argument you approve here runs through every asset.</p>
+      <p class="step-subtitle" id="step3Sub">Read what we found. Approve the argument — then we build.</p>
     </div>
 
     <!-- Narrative thread — the primary moment, serif, prominent -->
@@ -472,7 +472,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 3.5</span>
       <h2 class="step-title">Sharpen Truth</h2>
-      <p class="step-subtitle" id="step35Sub">Answer what you can. Every answer makes the output more precise.</p>
+      <p class="step-subtitle" id="step35Sub">One question per bullet. Your answer goes directly into the evidence in your cover letter.</p>
     </div>
 
     <div class="trust-line">Your answers are used to strengthen your assets. They never appear word-for-word.</div>
@@ -484,11 +484,11 @@
     <div class="field-group" style="margin-top:20px;">
       <label class="field-label">Anything that would strengthen your case <span style="font-weight:400;color:var(--text3);">— optional</span></label>
       <textarea class="textarea" id="anythingMissed" rows="3"
-        placeholder="Context, constraints, or evidence your CV doesn't capture — anything that would help us make a stronger case for you."></textarea>
+        placeholder="Anything your CV doesn't show — a project in progress, context behind a number, something that didn't make it into the document."></textarea>
     </div>
 
     <button class="btn-primary" onclick="FLOW.proceedToTexture()">Continue &#8594;</button>
-    <p class="hint-text" style="margin-top:8px;">Everything here is optional. Continue when you're ready.</p>
+    <p class="hint-text" style="margin-top:8px;">Optional — but the candidates who fill this in get noticeably better outputs.</p>
   </section>
 
   <div class="step-collapsed hidden" id="step35Collapsed">
@@ -518,21 +518,21 @@
     <div class="field-group voice-field" id="referralField">
       <label class="field-label">Were you referred by someone? <span class="field-optional">Optional</span></label>
       <input class="input-text" id="referralName" type="text"
-        placeholder="Their name — if you know someone there, your letter opens differently.">
-      <p class="hint-text">A referral name goes into the first sentence of your cover letter and email naturally.</p>
+        placeholder="Their name — we open your letter differently. First sentence references them, not you.">
+      <p class="hint-text">A referral changes how the entire letter is read before the first claim lands.</p>
     </div>
 
     <!-- Writing sample — shown when Cover Letter or Cold Outreach Email selected -->
     <div class="field-group voice-field" id="writingSampleField" style="margin-top:6px;padding-top:20px;border-top:1px solid var(--divider);">
       <label class="field-label">Paste something you've written <span class="field-optional">Optional but valuable</span></label>
       <textarea class="textarea" id="writingSample" rows="4"
-        placeholder="An email, a Slack message, a LinkedIn post — anything. We take the style, leave the content."></textarea>
-      <p class="hint-text">We read the rhythm, formality, and sentence length. Every asset sounds like you specifically — not a polished template.</p>
+        placeholder="Any piece of writing that sounds like you — an email, a message, a post. We take the rhythm, not the words."></textarea>
+      <p class="hint-text">We extract six signals: sentence length, formality, how you use numbers, word register, emotional register, rhythm. Then every asset is written to match.</p>
     </div>
 
     <!-- No-voice note — shown when neither Cover Letter nor Cold Email selected -->
     <div class="field-group hidden" id="noVoiceNote">
-      <p class="hint-text">Your selected assets don't need a writing sample — we'll build from your CV and brief directly.</p>
+      <p class="hint-text">Your selected assets don't require voice matching — we build from the brief directly.</p>
     </div>
 
     <button class="btn-primary" onclick="FLOW.proceedToChoosePath()">Continue &#8594;</button>
@@ -558,7 +558,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Application Form</span>
       <h2 class="step-title">Your Form Questions</h2>
-      <p class="step-subtitle" id="step425Sub">Give us the form. We'll answer every field from your brief.</p>
+      <p class="step-subtitle" id="step425Sub">Paste your application questions — we'll answer every one from the brief you approved.</p>
     </div>
 
     <div class="field-group">
@@ -571,7 +571,7 @@
 
     <div id="formPasteArea" class="field-group">
       <textarea class="textarea" id="formText" rows="8"
-        placeholder="Paste the form questions here — one per line or as they appear. Include any word limits or instructions shown."></textarea>
+        placeholder="Paste the questions exactly as they appear — including any word limits. We answer from your brief, not from templates."></textarea>
     </div>
 
     <div id="formImageArea" class="field-group hidden">
