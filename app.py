@@ -53,9 +53,9 @@ MODEL_REASON       = "llama-3.3-70b-versatile"    # reasoning, narrative, brief
 MODEL_GEMINI_FLASH = "gemini-2.5-flash-preview-04-17"   # generation
 MODEL_GEMINI_PRO   = "gemini-2.5-pro-preview-03-25"     # adversarial judge
 
-# ── Level 1 Canonical — embedded in every prompt ──────────────────────────────
-# This tells every model its role in the system, its operating standard,
-# and why honesty matters more than impressiveness.
+# ── Level 1 Canonical — embedded in every reasoning/generation prompt ─────────
+# Full version for: brief assembly, generation, judging, routing, cover letter
+# See LEVEL_1_LIGHT below for extraction-only calls (company name, job title, etc.)
 LEVEL_1 = """
 SYSTEM ROLE:
 You are one component in a multi-stage pipeline built to produce
@@ -87,6 +87,13 @@ in a real interview. It must hold up.
 Do not restate inputs. Do not summarise what you were given.
 Produce only what your task requires.
 """
+
+# ── Level 1 Light — for fast extraction calls only ───────────────────────────
+# 40 tokens vs 200. Used by: extract_company_name, extract_job_title,
+# extract_style_fingerprint, company_hook derivation, check_jd_thinness LLM calls.
+# Reasoning and generation calls always use full LEVEL_1.
+LEVEL_1_LIGHT = """Extract precisely. Output only the requested field.
+No preamble, no commentary, no markdown. If not found: output NONE."""
 
 # ── Voice and register — embedded in every generation prompt ──────────────────
 # Derived from 14 recruiter and hiring manager insights on what makes
@@ -735,11 +742,55 @@ def extract_style_fingerprint(sample_text):
     except:
         return ""
 
-def build_voice_instruction(writing_sample=""):
+def build_voice_instruction(writing_sample="", cv_register="standard"):
+    """
+    Build voice instruction from available signals.
+    Priority: writing sample fingerprint > cv_register > default.
+    When both exist, they are reconciled — not one overriding the other.
+    The CV register captures professional identity; the writing sample captures
+    natural communication style. Both together are more accurate than either alone.
+    """
     fingerprint = extract_style_fingerprint(writing_sample) if writing_sample else ""
-    if fingerprint:
-        return f"CANDIDATE VOICE — from their writing sample (overrides all defaults):\n{fingerprint}\n\nMatch this register precisely. Sharper, not different."
-    return "CANDIDATE VOICE — no writing sample provided. Apply default human register as specified in VOICE AND REGISTER above."
+
+    # cv_register → human-readable description of writing style from CV bullets
+    REGISTER_DESCRIPTIONS = {
+        'sparse_quantified':   'direct and metric-driven — short sentences, numbers do the talking',
+        'detailed_quantified': 'structured and evidence-rich — builds context before stating results',
+        'formal_narrative':    'professional and narrative — strong verbs, no numbers, storytelling',
+        'standard':            'balanced professional register — neither sparse nor verbose',
+    }
+    register_desc = REGISTER_DESCRIPTIONS.get(cv_register, REGISTER_DESCRIPTIONS['standard'])
+
+    if fingerprint and cv_register and cv_register != 'standard':
+        # Both signals available — reconcile them explicitly
+        return (
+            f"CANDIDATE VOICE — reconciled from two sources:\n\n"
+            f"CV BULLET STYLE ({cv_register}): Their professional writing is {register_desc}. "
+            f"This is how they write when presenting credentials.\n\n"
+            f"WRITING SAMPLE FINGERPRINT: How they write naturally, without performance:\n"
+            f"{fingerprint}\n\n"
+            f"SYNTHESIS: Write with the directness and precision of the CV bullets "
+            f"and the natural rhythm of the writing sample. Take the specificity from one "
+            f"and the humanity from the other. Where they conflict, the writing sample wins — "
+            f"it is less edited. Sharper, not different from either source."
+        )
+    elif fingerprint:
+        # Writing sample only
+        return (
+            f"CANDIDATE VOICE — from their writing sample (primary signal):\n"
+            f"{fingerprint}\n\n"
+            f"Match this register precisely. Sharper, not different."
+        )
+    elif cv_register and cv_register != 'standard':
+        # CV register only — use as weaker but still directional signal
+        return (
+            f"CANDIDATE VOICE — derived from CV bullet style ({cv_register}):\n"
+            f"Their professional writing is {register_desc}.\n"
+            f"No writing sample provided. Apply this register as a guide, not a constraint.\n"
+            f"Default to the human journalist register specified in VOICE AND REGISTER above."
+        )
+    else:
+        return "CANDIDATE VOICE — no writing sample or CV register signal. Apply default human register."
 
 # ── Four-search Tavily — deep company research ─────────────────────────────────
 def run_company_research(company, job_title, jd_text):
@@ -1128,12 +1179,17 @@ ROLE REALITY:
 INDUSTRY PRESSURE:
 {company_research['industry'][:300]}
 
-CANDIDATE BACKGROUND — use to prioritise, not to fabricate:
-The candidate's confirmed strengths from their CV. Prioritise pain points
-where at least one of these signals shows the candidate has relevant evidence.
-Do not force fit. Do not exclude pain points where the gap is real.
-Surface real gaps honestly — but rank them below points where evidence exists.
-{cv_text[:800]}
+CANDIDATE SIGNAL MAP — structured, for explicit overlap decisions:
+Prioritise pain points where the candidate has demonstrable evidence.
+Surface real gaps honestly — ranked below evidence-backed points, never excluded.
+
+Strongest achievement: {brief.get('top_achievement_1', cv_text[:150])}
+Second achievement: {brief.get('top_achievement_2', '')}
+Third achievement: {brief.get('top_achievement_3', '')}
+Metrics present in CV: {brief.get('all_metrics', '')}
+Strongest skill: {brief.get('strongest_skill', '')}
+Career arc: {brief.get('career_arc', brief.get('career_narrative', ''))}
+Career transitions: {brief.get('career_transitions', '')}
 
 OUTPUT FORMAT — exactly 5 lines, nothing else, no markdown:
 Each pain point is ONE sentence, maximum 20 words. A situation, not a capability.
@@ -1246,14 +1302,14 @@ prep are built from. Extraction that inflates or generalises produces
 assets that feel generic. Extraction that is specific and honest produces
 assets that feel real.
 
-PRIMARY INPUT — weight the candidate's own words most heavily:
-If the candidate has answered the questions below, their exact phrasing
-contains the raw material for the cover letter's most authentic moments.
+{f'''PRIMARY INPUT — candidate's own words (weight most heavily):
+Their exact phrasing contains the raw material for authentic moments.
 Extract it precisely — do not paraphrase away the specificity.
 
-{answers_context if answers_context else "CANDIDATE'S OWN WORDS: None provided. Extract from CV only."}
+{answers_context}
 
-SECONDARY INPUT — CV evidence:
+SECONDARY INPUT — CV evidence:''' if answers_context else '''PRIMARY INPUT — CV evidence:
+No answers provided. Extract all signals from the CV below.'''}
 {cv_summary}
 
 ROLE CONTEXT:
@@ -1481,7 +1537,10 @@ For each pain point: Strong / Moderate / Weak — one line each.
     brief['anything_missed'] = answers.get('anything_missed', answers.get('open_field', ''))
     brief['bullet_qa'] = answers.get('bullet_qa', {})
 
-    return brief, gap_analysis
+    # Strip raw cv_text before returning — parsed fields are sufficient downstream.
+    # Reduces network payload by 2-4KB per step. cv_text is still in DB if needed.
+    brief_for_frontend = {k: v for k, v in brief.items() if k not in ('cv_text',)}
+    return brief_for_frontend, gap_analysis
 
 # ── Bullet diagnosis with targeted questions — Groq 70b ───────────────────────
 def diagnose_bullets_with_questions(brief):
@@ -1651,12 +1710,27 @@ def generate_routing_options(brief):
             "best_when": "Your career arc is itself the most relevant signal for this role."
         })
 
-    # LLM recommendation — what actually serves the narrative thread best
+    # LLM recommendation — driven by situation signal, then career context
+    # Situation signal from Step 4 takes precedence over inferred career situation
+    situation = brief.get('application_context', {}).get('situation', '') or brief.get('situation', '')
+
     best_opening = opening_options[0]["id"] if opening_options else "lead_metric"
-    if referral_name:
+
+    # Situation-aware routing — maps application situation to optimal opening structure
+    if situation == 'referral' and referral_name:
+        best_opening = "referral"
+    elif situation == 'transition' and any(o["id"] == "bridge" for o in opening_options):
+        best_opening = "bridge"
+    elif situation == 'proactive' and any(o["id"] == "lead_narrative" for o in opening_options):
+        best_opening = "lead_narrative"   # conviction-led, direction as the argument
+    elif situation == 'internal' and any(o["id"] == "lead_story" for o in opening_options):
+        best_opening = "lead_story"       # shared context — specific moment over credential
+    elif referral_name:
         best_opening = "referral"
     elif career_situation in ["pivot", "gap"] and any(o["id"] == "bridge" for o in opening_options):
         best_opening = "bridge"
+    elif ach1 and any(o["id"] == "lead_metric" for o in opening_options):
+        best_opening = "lead_metric"      # default — evidence first
 
     p3_options = []
     if hook and 'NONE' not in hook:
@@ -2013,43 +2087,63 @@ def generate_cover_letter(brief, voice_instruction, routing_choices=None, applic
     # ── Adversarial Judge: Gemini 2.5 Pro ─────────────────────────────────────
     # Cross-model critique — Pro evaluates what Flash produced.
     # Pro has different training priors than Flash; it notices different failures.
-    # The judge evaluates against five criteria: 75% recruiter, 25% editorial.
-    # It compares the letter against the scratchpad commitments.
-    # Returns structured verdict: PASS / REVISE / REJECT with precise signal.
+    # ── Adversarial Judge — Gemini Pro evaluates Gemini Flash output ───────────
+    # Cross-model critique: the generator and the judge are different models.
+    # This prevents the generator from approving its own output.
+    #
+    # FAILURE MODE FIXED: previously caught all exceptions silently.
+    # Now: logs judge failure explicitly, falls back to Groq 70b if Pro unavailable,
+    # and validates the VERDICT field exists before acting on it.
     judge_verdict = "PASS"
     judge_signal  = ""
     judge_revision_instruction = ""
+    judge_ran_successfully = False
 
     company   = brief.get('company', 'this company')
     job_title = brief.get('job_title', 'this role')
 
-    try:
-        judge_prompt = f"""{LEVEL_1}
+    # Build the evidence fingerprint — exact claims the judge checks against
+    # This is what makes FABRICATED detection reliable: judge has exact brief evidence
+    evidence_fingerprint = f"""EXACT EVIDENCE IN BRIEF (judge checks every claim against this):
+Candidate name: {brief.get('candidate_name', 'Not specified')}
+Achievement 1: {brief.get('top_achievement_1', 'Not provided')}
+Achievement 2: {brief.get('top_achievement_2', 'Not provided')}
+Achievement 3: {brief.get('top_achievement_3', 'Not provided')}
+All metrics from CV: {brief.get('all_metrics', 'Not provided')}
+Career narrative: {brief.get('career_narrative', 'Not provided')}
+Narrative thread: {brief.get('narrative_thread', 'Not provided')}
+Pain points: {chr(10).join(brief.get('selected_pain_points', []))}
+Company hook (from research): {brief.get('company_hook', 'Not provided')}
+Strategic context: {brief.get('strategic_context', 'Not provided')}
+Candidate own words: {brief.get('q1','')} / {brief.get('q2','')} / {brief.get('q3','')} / {brief.get('q4','')}
+Anything missed: {brief.get('anything_missed', '')}
+
+FABRICATION DEFINITION:
+A claim is FABRICATED if it contains a specific detail — a conversation,
+a quote, a number, a person, an event — that does not appear anywhere
+in the evidence fingerprint above.
+A claim is INFLATED if a number or outcome in the letter is larger
+than what appears in the evidence fingerprint.
+A claim is GROUNDED if it is directly traceable to the fingerprint."""
+
+    judge_prompt = f"""{LEVEL_1}
 
 YOUR TASK:
-You are a senior recruiter who has read over 500 cover letters for roles
-like {job_title}. You are also a rigorous editor who cannot be fooled by
-polished prose that contains no substance.
+You are a senior editorial judge evaluating a cover letter before it reaches
+a recruiter. You have the candidate's complete evidence brief. Your job is to
+find every place where the letter makes a claim that cannot be defended in
+a real interview.
 
-Evaluate this cover letter against five criteria.
-You have access to the full brief and the writer's own scratchpad commitments.
-Your job is adversarial — find what fails, name it precisely.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-THE BRIEF (what the candidate actually has):
-Company: {company}
-Role: {job_title}
-Narrative thread: {brief.get('narrative_thread', '')}
-Pain points: {chr(10).join(brief.get('selected_pain_points', []))}
-Achievement 1: {brief.get('top_achievement_1', '')}
-Achievement 2: {brief.get('top_achievement_2', '')}
-Company hook / research: {brief.get('company_hook', '')}
-Strategic context: {brief.get('strategic_context', '')}
-Candidate's own words (q1-q4): {brief.get('q1','')} / {brief.get('q2','')} / {brief.get('q3','')} / {brief.get('q4','')}
+You are adversarial. You are not trying to approve this letter.
+You are trying to find what fails so it can be fixed before it damages
+the candidate's credibility.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-THE WRITER'S SCRATCHPAD COMMITMENTS:
-{scratchpad if scratchpad else "[Scratchpad not available — evaluate letter against brief only]"}
+{evidence_fingerprint}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+THE SCRATCHPAD COMMITMENTS (what the writer planned):
+{scratchpad if scratchpad else "[Not available — evaluate against brief only]"}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 THE COVER LETTER:
@@ -2058,124 +2152,156 @@ THE COVER LETTER:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 EVALUATION CRITERIA:
 
-CRITERION 1 — GENUINE COMPANY UNDERSTANDING (recruiter, 20%)
-Does the letter demonstrate something specific about {company}'s situation
-that a candidate who hadn't thought carefully about them wouldn't know?
-Not a careers-page fact — an inference, an observation, a reading of their moment.
-Could this P3 appear in a letter to three other companies in the same industry?
-If yes: FAIL. If no — it is earned: PASS.
-Also check: does the letter deliver what SLOT_2_COMPANY_OBSERVATION committed to?
+CRITERION 1 — EVIDENCE INTEGRITY (35% weight — most important)
+Go sentence by sentence through P1 and P2.
+For each specific claim (a number, a named product, a described outcome,
+a quoted person, a described conversation), check it against the evidence
+fingerprint above.
 
-CRITERION 2 — BIOGRAPHICAL INEVITABILITY (recruiter, 20%)
-Does the candidate's history create a felt logic toward this role —
-not a stated one? Does the reader finish and think "of course"
-or "sounds reasonable"? "Sounds reasonable" is a FAIL.
-Is the connection argued through specific evidence, or merely asserted?
-Pure assertion with no evidence trail: REVISE. No causal thread at all: REJECT.
-Also check: does the letter use SLOT_3_BIOGRAPHICAL_THREAD?
+GROUNDED = directly in the fingerprint, proportionate
+INFLATED  = in the fingerprint but exaggerated or overstated
+FABRICATED = not in the fingerprint at all
 
-CRITERION 3 — VOICE NATURALNESS (recruiter, 20%)
-Three sub-signals:
-(a) Sentence rhythm — does length vary meaningfully across paragraphs?
-(b) Unexpected phrasing — at least one word choice or construction that
-    professional-register optimisation alone would not produce?
-(c) Tonal consistency — does the voice feel like one person throughout,
-    or does it shift register between paragraphs?
-If uniformly smooth, every sentence the same weight and length: REVISE.
+If ANY claim is FABRICATED → automatic REJECT.
+Do not weigh other criteria if FABRICATED is found.
+Name the exact fabricated sentence in your output.
+
+CRITERION 2 — BIOGRAPHICAL INEVITABILITY (25% weight)
+Does the candidate's history create a felt logic toward this role?
+Is the connection argued through specific evidence from the brief,
+or merely asserted through credentials and job titles?
+Pure assertion with no evidence trail: REVISE.
+No causal thread at all: REJECT.
+
+CRITERION 3 — COMPANY SPECIFICITY (20% weight)
+Does P3 contain an observation about {company} that could not appear
+in a letter to three other companies in the same industry?
+Test: remove the company name from P3. Does the paragraph still only
+make sense for {company}? If not: REVISE.
+
+CRITERION 4 — VOICE AUTHENTICITY (20% weight)
+Does the letter read like one person wrote it?
+Three signals: sentence rhythm varies, at least one unexpected word choice,
+tonal consistency across all four paragraphs.
+If uniformly smooth and interchangeable paragraphs: REVISE.
 Name the specific paragraph that is most mechanical.
-
-CRITERION 4 — EMOTIONAL HONESTY (recruiter, 15%)
-Is there one moment where the candidate sounds like a person rather than
-a professional document? An honest motivation, an acknowledged tension,
-a reason specific to them. Not "I am passionate about X." Not generic ambition.
-Something only this candidate could mean.
-Absent entirely: REVISE. Replaced by formulaic passion language: REVISE
-(formulaic is worse than absence — it signals awareness of the gap
-filled with the wrong thing).
-Also check: does the letter deliver SLOT_5_HONEST_TEXTURE?
-
-CRITERION 5 — EVIDENCE INTEGRITY (editorial, 25%)
-Classify every specific claim in the letter:
-GROUNDED: directly traceable to brief, proportionate to evidence
-INFLATED: traceable but overstated relative to what the brief supports
-FABRICATED: no basis in the brief at all
-FABRICATED = automatic REJECT regardless of other criteria performance.
-INFLATED = REVISE with specific deflation instruction.
-Also check: is SLOT_4_EVIDENCE_ANCHOR present in the letter with its mechanism?
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 VERDICT LOGIC:
 
-PASS if:
-- No FABRICATED claims
-- Criteria 1, 2, 3 all PASS
-- No more than one REVISE signal, and only on criterion 4
+REJECT if:
+  - ANY FABRICATED claim found (automatic, regardless of other criteria)
+  - Criterion 2 has no causal thread at all
+  - Three or more REVISE signals across criteria 2, 3, 4
 
 REVISE if:
-- One or two REVISE signals on criteria 2, 3, or 4
-- No REJECT signals
-- No FABRICATED claims
+  - INFLATED claims found (no FABRICATED)
+  - One or two REVISE signals on criteria 2, 3, or 4
+  - No REJECT triggers
 
-REJECT if:
-- Any FABRICATED claim
-- REJECT signal on criterion 1 (no earned company understanding)
-- REJECT signal on criterion 2 (no causal thread — pure credential assembly)
-- Three or more REVISE signals across any criteria
+PASS if:
+  - No FABRICATED or INFLATED claims
+  - Criteria 2, 3, 4 all PASS or REVISE with minor issues only
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Output EXACTLY this format — no preamble, no commentary:
+Output EXACTLY this format. No preamble. No commentary after.
 
 VERDICT: [PASS|REVISE|REJECT]
 
-C1_COMPANY_UNDERSTANDING: [PASS|FAIL] — [one sentence if FAIL]
-C2_BIOGRAPHICAL_INEVITABILITY: [PASS|REVISE|REJECT] — [one sentence if not PASS]
-C3_VOICE_NATURALNESS: [PASS|REVISE] — [specific paragraph if REVISE]
-C4_EMOTIONAL_HONESTY: [PASS|REVISE] — [one sentence if REVISE]
-C5_EVIDENCE_INTEGRITY: [PASS|REVISE|REJECT] — [list any INFLATED or FABRICATED claims]
+C1_EVIDENCE_INTEGRITY: [PASS|REVISE|REJECT]
+FABRICATED_CLAIMS: [List each fabricated sentence verbatim, or NONE]
+INFLATED_CLAIMS: [List each inflated claim with what the brief actually says, or NONE]
 
-REVISION_INSTRUCTION: [If REVISE: one surgical instruction — which paragraph, what changes, what specific brief material to use. If PASS or REJECT: NONE]
+C2_BIOGRAPHICAL_INEVITABILITY: [PASS|REVISE|REJECT]
+C2_NOTE: [One sentence if not PASS, or PASS]
 
-REJECTION_SIGNAL: [If REJECT: three things — (1) the specific failure as a prohibition, (2) the brief material that was available but unused, (3) the argument structure pre-solved. If PASS or REVISE: NONE]"""
+C3_COMPANY_SPECIFICITY: [PASS|REVISE]
+C3_NOTE: [One sentence if REVISE, or PASS]
 
+C4_VOICE_AUTHENTICITY: [PASS|REVISE]
+C4_PARAGRAPH: [Name the most mechanical paragraph if REVISE, or NONE]
+
+REVISION_INSTRUCTION: [If REVISE: one surgical instruction — which paragraph, what to change, which brief evidence to use. If PASS or REJECT: NONE]
+
+REJECTION_SIGNAL: [If REJECT: (1) the exact fabrication or failure, (2) brief evidence that was available but unused, (3) the argument the letter should have made. If PASS or REVISE: NONE]"""
+
+    try:
+        # Try Pro first for best judgment quality
         judge_raw = llm_gemini(
             judge_prompt,
-            max_tokens=600,
+            max_tokens=700,
             model=MODEL_GEMINI_PRO,
-            temperature=0.2   # Low temperature — judge must be consistent and precise
+            temperature=0.1  # Very low — judge must be deterministic and precise
         )
+        judge_ran_successfully = True
+    except Exception as judge_err:
+        print(f"Judge Pro failed, trying Flash: {judge_err}")
+        try:
+            # Flash fallback — same prompt, slightly less reliable but functional
+            judge_raw = llm_gemini(
+                judge_prompt,
+                max_tokens=700,
+                model=MODEL_GEMINI_FLASH,
+                temperature=0.1
+            )
+            judge_ran_successfully = True
+        except Exception as flash_err:
+            print(f"Judge Flash also failed: {flash_err}")
+            # Final fallback — Groq 70b
+            try:
+                judge_raw = llm(judge_prompt, max_tokens=700, quality="high", temperature=0.1)
+                judge_ran_successfully = True
+            except Exception as groq_err:
+                print(f"Judge Groq also failed: {groq_err}")
+                judge_ran_successfully = False
 
-        # Parse verdict
+    if judge_ran_successfully and judge_raw:
+        # Parse verdict — case-insensitive, multiple pattern attempts
         verdict_match = re.search(r'VERDICT:\s*(PASS|REVISE|REJECT)', judge_raw, re.IGNORECASE)
         if verdict_match:
             judge_verdict = verdict_match.group(1).upper()
+        else:
+            # Verdict line not found — don't assume PASS, log and proceed
+            print(f"Judge produced no VERDICT line. Raw output snippet: {judge_raw[:200]}")
+            judge_verdict = "PASS"  # fail-open to avoid blocking user
 
-        revision_match  = re.search(r'REVISION_INSTRUCTION:\s*(.+?)(?=\nREJECTION_SIGNAL:|$)', judge_raw, re.DOTALL)
-        rejection_match = re.search(r'REJECTION_SIGNAL:\s*(.+?)$', judge_raw, re.DOTALL)
+        # Parse fabrication — if any fabricated claims, override verdict to REJECT
+        fab_match = re.search(r'FABRICATED_CLAIMS:\s*(.+?)(?=\nINFLATED_CLAIMS:|$)', judge_raw, re.DOTALL | re.IGNORECASE)
+        if fab_match:
+            fab_content = fab_match.group(1).strip()
+            if fab_content.upper() not in ('NONE', 'NONE.', ''):
+                # Fabrication found — force REJECT regardless of VERDICT line
+                judge_verdict = "REJECT"
+                print(f"Fabrication detected by judge: {fab_content[:200]}")
+
+        revision_match  = re.search(r'REVISION_INSTRUCTION:\s*(.+?)(?=\nREJECTION_SIGNAL:|$)', judge_raw, re.DOTALL | re.IGNORECASE)
+        rejection_match = re.search(r'REJECTION_SIGNAL:\s*(.+?)$', judge_raw, re.DOTALL | re.IGNORECASE)
 
         if revision_match:
             judge_signal = revision_match.group(1).strip()
         if rejection_match:
             judge_revision_instruction = rejection_match.group(1).strip()
 
-        # ── Act on verdict ─────────────────────────────────────────────────────
-        if judge_verdict == "REVISE" and judge_signal and judge_signal.upper() != "NONE":
-            # Surgical revision pass — Flash executes against Pro's precise instruction
+        # ── Act on verdict ───────────────────────────────────────────────────
+        if judge_verdict == "REVISE" and judge_signal and judge_signal.upper() not in ('NONE', 'NONE.'):
+            # Surgical revision — Flash executes Pro's precise instruction
             revision_prompt = f"""{LEVEL_1}
 
 YOUR TASK:
 Make one targeted revision to this cover letter.
 A cross-model evaluator has identified a specific problem.
-Fix only what is named. Preserve everything that was not named.
+Fix ONLY what is named. Preserve everything that was not named.
 
 EVALUATOR'S INSTRUCTION:
 {judge_signal}
 
-BRIEF CONTEXT (for revision):
+BRIEF CONTEXT:
 Achievement 1: {brief.get('top_achievement_1', '')}
 Achievement 2: {brief.get('top_achievement_2', '')}
+All metrics: {brief.get('all_metrics', '')}
 Company hook: {brief.get('company_hook', '')}
 Narrative thread: {brief.get('narrative_thread', '')}
-Candidate voice (q1-q4): {brief.get('q1','')} / {brief.get('q2','')} / {brief.get('q3','')} / {brief.get('q4','')}
+Candidate own words: {brief.get('q1','')} / {brief.get('q2','')} / {brief.get('q3','')} / {brief.get('q4','')}
 
 CURRENT LETTER:
 {text}
@@ -2185,19 +2311,24 @@ CURRENT LETTER:
 Constraints: 180-280 words. No paragraph opens with I.
 Output ONLY the revised letter. Four paragraphs. No commentary."""
 
-            text = llm_gemini(revision_prompt, max_tokens=1200, model=MODEL_GEMINI_FLASH, temperature=0.65)
+            try:
+                revised = llm_gemini(revision_prompt, max_tokens=1200, model=MODEL_GEMINI_FLASH, temperature=0.65)
+                if revised and len(revised.strip()) > 100:
+                    text = revised
+            except Exception as rev_err:
+                print(f"Revision failed (non-fatal): {rev_err}")
 
-        elif judge_verdict == "REJECT" and judge_revision_instruction and judge_revision_instruction.upper() != "NONE":
-            # Full regeneration — with prohibition, missed material, and pre-solved structure
+        elif judge_verdict == "REJECT" and judge_revision_instruction and judge_revision_instruction.upper() not in ('NONE', 'NONE.'):
+            # Full regeneration — with the prohibition, missed material, pre-solved structure
             regen_prompt = f"""{LEVEL_1}
 
 YOUR TASK:
 Write a new cover letter for {job_title} at {company}.
-A previous attempt was evaluated and rejected. The rejection signal
-tells you exactly what failed, what evidence was missed, and what
-argument to make. Follow it precisely.
+A previous attempt was rejected. The rejection signal tells you exactly
+what failed, what evidence was missed, and the argument to make.
+Follow it precisely. Do not repeat the failure.
 
-REJECTION SIGNAL FROM EVALUATOR:
+REJECTION SIGNAL:
 {judge_revision_instruction}
 
 {FEW_SHOT_EXAMPLES}
@@ -2208,11 +2339,11 @@ Pain points: {chr(10).join(brief.get('selected_pain_points', []))}
 Achievement 1: {brief.get('top_achievement_1', '')}
 Achievement 2: {brief.get('top_achievement_2', '')}
 Achievement 3: {brief.get('top_achievement_3', '')}
+All metrics: {brief.get('all_metrics', '')}
 Company hook: {brief.get('company_hook', '')}
 Strategic context: {brief.get('strategic_context', '')}
-Candidate (q1-q4): {brief.get('q1','')} / {brief.get('q2','')} / {brief.get('q3','')} / {brief.get('q4','')}
+Candidate own words: {brief.get('q1','')} / {brief.get('q2','')} / {brief.get('q3','')} / {brief.get('q4','')}
 Anything missed: {brief.get('anything_missed', '')}
-CV: {brief.get('cv_text', '')[:2000]}
 
 {VOICE_REGISTER}
 {voice_instruction}
@@ -2220,13 +2351,15 @@ CV: {brief.get('cv_text', '')[:2000]}
 Constraints: 180-280 words. No paragraph opens with I. No sentence over 25 words.
 Output ONLY the cover letter. Four paragraphs. No preamble."""
 
-            text = llm_gemini(regen_prompt, max_tokens=1200, model=MODEL_GEMINI_FLASH, temperature=0.75)
+            try:
+                regenerated = llm_gemini(regen_prompt, max_tokens=1200, model=MODEL_GEMINI_FLASH, temperature=0.75)
+                if regenerated and len(regenerated.strip()) > 100:
+                    text = regenerated
+            except Exception as regen_err:
+                print(f"Regeneration failed (non-fatal): {regen_err}")
 
-    except Exception:
-        # Judge failure is non-fatal — return original generated letter
-        pass
 
-    # ── Build letter_brief — decision record for refinement ───────────────────
+        # ── Build letter_brief — decision record for refinement ───────────────────
     opening_labels = {
         'lead_metric':    'Led with strongest result',
         'bridge':         'Opened with bridge from background',
@@ -3013,7 +3146,8 @@ async def api_generate(req: GenerateRequest):
         raise HTTPException(400, "Brief not complete — narrative thread missing")
     try:
         brief               = dict(req.brief)
-        voice_instruction   = build_voice_instruction(req.writing_sample or "")
+        cv_reg = (req.application_context or {}).get('cv_register', 'standard') if req.application_context else 'standard'
+        voice_instruction   = build_voice_instruction(req.writing_sample or "", cv_register=cv_reg)
         application_context = req.application_context or {}
         routing_choices     = req.routing_choices or {}
 
@@ -3108,7 +3242,8 @@ async def api_refine(req: RefineRequest):
     if not req.current_text or not req.feedback:
         raise HTTPException(400, "Text and feedback required")
     try:
-        voice_instruction = build_voice_instruction(req.writing_sample or "")
+        cv_reg = (req.application_context or {}).get('cv_register', 'standard') if req.application_context else 'standard'
+        voice_instruction = build_voice_instruction(req.writing_sample or "", cv_register=cv_reg)
         is_cover          = "cover" in req.output_type.lower()
         lb                = req.letter_brief or {}
         paragraph_focus   = req.paragraph_focus or ""
