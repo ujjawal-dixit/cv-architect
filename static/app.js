@@ -632,11 +632,23 @@ const RENDERERS = (() => {
       const relevance = relevanceM ? relevanceM[1].trim() : '';
       const qRaw      = questionsM ? questionsM[1].trim() : '';
 
-      // Infer enrichment need from VERDICT in original raw (before stripping)
-      const verdictSlice = raw.indexOf(bulletText.slice(0, 30));
-      const verdictSearch = verdictSlice >= 0 ? raw.slice(verdictSlice, verdictSlice + 500) : '';
-      const verdictM  = verdictSearch.match(/VERDICT:\s*(\w+)/i);
+      // Read GAP_TYPE from original raw — determines placeholder and label
+      const verdictSlice  = raw.indexOf(bulletText.slice(0, 30));
+      const verdictSearch = verdictSlice >= 0 ? raw.slice(verdictSlice, verdictSlice + 600) : '';
+      const verdictM      = verdictSearch.match(/VERDICT:\s*(\w+)/i);
+      const gapTypeM      = verdictSearch.match(/GAP_TYPE:\s*([A-Z_]+)/i);
+      const gapType       = gapTypeM ? gapTypeM[1].toUpperCase() : 'NONE';
       const needsEnrichment = verdictM ? verdictM[1].toUpperCase() === 'NEEDS_ENRICHMENT' : qRaw.length > 5;
+
+      // Gap-type-specific placeholder — guides the candidate to answer what the pipeline needs
+      const GAP_PLACEHOLDERS = {
+        MISSING_METRIC:    'Even approximate — percentage, revenue figure, time saved, team size. Rough numbers are better than no numbers.',
+        MISSING_MECHANISM: 'What specifically did you do to produce this? The decision, the action, the move that made the difference.',
+        MISSING_SCOPE:     'What was the scale — budget, number of accounts, users, markets — that gives this its full weight?',
+        VAGUE_CLAIM:       'What specifically did you do here that someone else in your position wouldn\'t have done?',
+        NONE:              'Your answer…',
+      };
+      const placeholder = GAP_PLACEHOLDERS[gapType] || GAP_PLACEHOLDERS.NONE;
 
       cardCount++;
 
@@ -645,7 +657,6 @@ const RENDERERS = (() => {
         const qLines = qRaw.split('\n')
           .map(l => l.replace(/^\d+[.)]\s*/,'').replace(/^[-•]\s*/,'').trim())
           .filter(l => l.length > 5);
-        // Show only the FIRST question — targeted, not overwhelming
         const firstQ = qLines[0];
         if (firstQ) {
           const fid = `bulletQ_${cardCount}_0`;
@@ -653,7 +664,8 @@ const RENDERERS = (() => {
             <p class="bullet-question-text">${escHtml(firstQ)}</p>
             <textarea class="textarea bullet-question-answer" id="${fid}"
               data-bullet="${escHtml(bulletText)}" data-question="${escHtml(firstQ)}"
-              rows="2" placeholder="Your answer…"></textarea>
+              data-gap-type="${escHtml(gapType)}"
+              rows="2" placeholder="${escHtml(placeholder)}"></textarea>
           </div>`;
         }
       }
@@ -1045,11 +1057,11 @@ const FLOW = (() => {
   const { show, hide, val, setText, setHtml, el } = DOM;
 
   const ASSET_CONFIG = {
-    'Cover Letter':           { id:'coverLetter',   rawId:'coverRaw',    label:'✏ Cover Letter',  briefDefault:'Cover letter incoming.' },
-    'Resume Bullets':         { id:'resumeBullets', rawId:'bulletsRaw',  label:'▪ Bullets',        briefDefault:'Bullets arrive here.' },
-    'Cold Outreach Email':    { id:'email',         rawId:'emailRaw',    label:'✉ Email',          briefDefault:'Your email comes here.' },
-    'Interview Prep':         { id:'interviewPrep', rawId:'interviewRaw',label:'▶ Interview',      briefDefault:'Your interview prep lands here.' },
-    'Answer Application Form':{ id:'formAnswers',   rawId:'formRaw',     label:'☐ Form Answers',   briefDefault:'Your form answers land here.' },
+    'Cover Letter':           { id:'coverLetter',   rawId:'coverRaw',    label:'✏ Cover Letter',  briefDefault:'Your cover letter is being written. It will open with your strongest result, not your job title.' },
+    'Resume Bullets':         { id:'resumeBullets', rawId:'bulletsRaw',  label:'▪ Bullets',        briefDefault:'Your bullets are being rewritten — each one sharpened to prove a specific thing about your case.' },
+    'Cold Outreach Email':    { id:'email',         rawId:'emailRaw',    label:'✉ Email',          briefDefault:'Your cold email is being written — three sentences, one specific company observation, one clear ask.' },
+    'Interview Prep':         { id:'interviewPrep', rawId:'interviewRaw',label:'▶ Interview',      briefDefault:'Your interview prep is being built — questions from the JD, answers from your evidence, what to avoid.' },
+    'Answer Application Form':{ id:'formAnswers',   rawId:'formRaw',     label:'☐ Form Answers',   briefDefault:'Answering every form field from the brief you approved — not from templates.' },
   };
   const RESULT_KEY = {
     'Cover Letter':'cover_letter', 'Resume Bullets':'resume_bullets',
@@ -1166,13 +1178,13 @@ const FLOW = (() => {
 
   // ── Step 0 ─────────────────────────────────────────────────────────────────
   const ASSET_NUDGES = {
-    single_cover:'A cover letter built with company research is significantly stronger.',
-    single_bullets:'Bullets only — fast and focused. Sharpened against this specific role.',
-    single_interview:'Interview prep only — questions pulled from the JD and your CV.',
-    single_email:'Cold email only. We\'ll research the company so sentence one earns attention.',
-    single_form:'Form answering only — paste or screenshot your questions.',
-    full_package:'The complete stack for a role that matters. Every asset built from one brief.',
-    multiple:'We\'ll run the steps each selected asset needs. Nothing extra.',
+    single_cover:    'We research the company, find the argument, write the letter. Not from a template — from your evidence.',
+    single_bullets:  'We select the bullets most relevant to this role and rewrite each one to prove something specific.',
+    single_interview:'Questions pulled from the JD, answers built from your CV, what each question is really testing.',
+    single_email:    'Three sentences. One specific company observation. One result from your CV. One clear ask.',
+    single_form:     'Every field answered from the brief — your evidence, your voice, the argument we\'ve built.',
+    full_package:    'Every asset built from one brief. The cover letter and bullets tell the same story. The email opens that story. The interview prep defends it.',
+    multiple:        'Each asset needs different information — we\'ll ask for what\'s relevant and skip what\'s not.',
   };
 
   function toggleAssetCard(card) {
