@@ -96,15 +96,14 @@
   <section class="step active" id="step0">
     <div class="step-header">
       <p class="step-eyebrow">Start here</p>
-      <h2 class="step-title">Reframe your worth.</h2>
-      <p class="step-subtitle" id="step0Sub">Select what you need. We build only that.</p>
-      <p class="step-proposition">
-        We read your CV and the JD together, find the one argument that connects them, and build every asset from that argument. The cover letter opens with your strongest result. The bullets are rewritten to prove it. The interview prep anticipates how to defend it.
-      </p>
+      <h2 class="step-title">What do you need?</h2>
+      <p class="step-subtitle" id="step0Sub">Choose what you need.</p>
+      <p class="step-proposition">One brief. One argument. Every asset built to prove it.</p>
     </div>
 
-    <!-- Row 1: 3 cards -->
-    <div class="asset-grid" id="assetSelectGrid">
+    <!-- Asset grid: 2+2+1 layout — no orphaned cards on any screen size -->
+    <!-- Row 1: 2 cards — the two most common -->
+    <div class="asset-grid asset-grid-2col" id="assetSelectGrid">
       <div class="asset-card" data-asset="Cover Letter" onclick="FLOW.toggleAssetCard(this)">
         <span class="asset-card-icon">✍️</span>
         <span class="asset-card-name">Cover Letter</span>
@@ -115,23 +114,26 @@
         <span class="asset-card-name">Resume Bullets</span>
         <span class="asset-card-desc">Your bullets, rewritten to get selected.</span>
       </div>
+    </div>
+    <!-- Row 2: 2 cards -->
+    <div class="asset-grid asset-grid-2col" style="margin-top:0;">
       <div class="asset-card" data-asset="Interview Prep" onclick="FLOW.toggleAssetCard(this)">
         <span class="asset-card-icon">🎯</span>
         <span class="asset-card-name">Interview Prep</span>
         <span class="asset-card-desc">The right questions. Your best answers.</span>
       </div>
-    </div>
-    <!-- Row 2: 2 cards -->
-    <div class="asset-grid-row2">
       <div class="asset-card" data-asset="Cold Outreach Email" onclick="FLOW.toggleAssetCard(this)">
         <span class="asset-card-icon">📩</span>
         <span class="asset-card-name">Cold Outreach Email</span>
-        <span class="asset-card-desc">Email to grab a recruiter's attention.</span>
+        <span class="asset-card-desc">Three sentences. One specific observation.</span>
       </div>
+    </div>
+    <!-- Row 3: full width — only one, always clean -->
+    <div class="asset-grid-full" style="margin-top:0;margin-bottom:8px;">
       <div class="asset-card" data-asset="Answer Application Form" onclick="FLOW.toggleAssetCard(this)">
         <span class="asset-card-icon">📝</span>
         <span class="asset-card-name">Answer Application Form</span>
-        <span class="asset-card-desc">Personalised answers to your questions.</span>
+        <span class="asset-card-desc">Every question answered from your brief.</span>
       </div>
     </div>
     <!-- Full package — full width below -->
@@ -156,7 +158,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 1 of 5</span>
       <h2 class="step-title">Your Story</h2>
-      <p class="step-subtitle" id="step1Sub">Add your CV — the more complete it is, the more precisely we can argue your case.</p>
+      <p class="step-subtitle" id="step1Sub">Add your CV. The more complete, the sharper we argue.</p>
     </div>
 
     <div class="privacy-badge">
@@ -189,7 +191,7 @@
       <div class="upload-status hidden" id="cvFileStatus"></div>
     </div>
 
-    <p class="hint-text">If your CV uses columns or tables, the text version gives us cleaner signal. Formatting disappears in ATS systems anyway.</p>
+    <p class="hint-text">Columns and tables break ATS parsing. Paste the text version if your CV uses them.</p>
 
     <!-- ATS extraction note + extracted text preview — shown after file upload -->
     <div class="cv-extraction-note hidden" id="cvExtractionNote"></div>
@@ -302,7 +304,7 @@
 
     <!-- e.g. MakeMyTrip — always visible, user can pre-fill -->
     <div class="field-group" style="margin-top:4px;">
-      <label class="field-label" style="font-size:12px;color:var(--text3);">Company name <span style="font-weight:400;">— we detect it from the JD, or type it here</span></label>
+      <label class="field-label" style="font-size:12px;color:var(--text3);">Company name <span style="font-weight:400;color:var(--text3);">— detected automatically, or type it</span></label>
       <input class="input-text" id="manualCompany" type="text" placeholder="e.g. Google, Stripe, Monzo…">
     </div>
 
@@ -343,7 +345,7 @@
             </div>
           </div>
         </div>
-        <p class="hint-text" style="color:var(--warn);">Fix it if we got it wrong — company and role shape every sentence we write.</p>
+        <p class="hint-text" style="color:var(--warn);">Wrong? Fix it — these flow into every asset.</p>
       </div>
 
       <!-- Company briefing — shown expanded by default after research completes -->
@@ -472,7 +474,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 3.5</span>
       <h2 class="step-title">Sharpen Truth</h2>
-      <p class="step-subtitle" id="step35Sub">One question per bullet. Your answer goes directly into the evidence in your cover letter.</p>
+      <p class="step-subtitle" id="step35Sub">One question per bullet. Your answer becomes evidence.</p>
     </div>
 
     <div class="trust-line">Your answers are used to strengthen your assets. They never appear word-for-word.</div>
@@ -488,7 +490,7 @@
     </div>
 
     <button class="btn-primary" onclick="FLOW.proceedToTexture()">Continue &#8594;</button>
-    <p class="hint-text" style="margin-top:8px;">Optional — but the candidates who fill this in get noticeably better outputs.</p>
+    <p class="hint-text" style="margin-top:8px;">Optional. Every answer makes the output more specific.</p>
   </section>
 
   <div class="step-collapsed hidden" id="step35Collapsed">
@@ -511,7 +513,7 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 4 of 5</span>
       <h2 class="step-title">Your Voice</h2>
-      <p class="step-subtitle" id="step4Sub">Two things — both optional, both change the output significantly.</p>
+      <p class="step-subtitle" id="step4Sub">Both optional. Both change how every asset sounds.</p>
     </div>
 
     <!-- Referral — shown when Cover Letter or Cold Outreach Email selected -->
@@ -519,7 +521,7 @@
       <label class="field-label">Were you referred by someone? <span class="field-optional">Optional</span></label>
       <input class="input-text" id="referralName" type="text"
         placeholder="Their name — we open your letter differently. First sentence references them, not you.">
-      <p class="hint-text">A referral changes how the entire letter is read before the first claim lands.</p>
+      <p class="hint-text">A referral changes the opening of every asset we write.</p>
     </div>
 
     <!-- Writing sample — shown when Cover Letter or Cold Outreach Email selected -->
@@ -527,12 +529,12 @@
       <label class="field-label">Paste something you've written <span class="field-optional">Optional but valuable</span></label>
       <textarea class="textarea" id="writingSample" rows="4"
         placeholder="Any piece of writing that sounds like you — an email, a message, a post. We take the rhythm, not the words."></textarea>
-      <p class="hint-text">We extract six signals: sentence length, formality, how you use numbers, word register, emotional register, rhythm. Then every asset is written to match.</p>
+      <p class="hint-text">We read the rhythm and formality. Every asset sounds like you — not a template.</p>
     </div>
 
     <!-- No-voice note — shown when neither Cover Letter nor Cold Email selected -->
     <div class="field-group hidden" id="noVoiceNote">
-      <p class="hint-text">Your selected assets don't require voice matching — we build from the brief directly.</p>
+      <p class="hint-text">These assets don't need a writing sample. We build from your brief.</p>
     </div>
 
     <button class="btn-primary" onclick="FLOW.proceedToChoosePath()">Continue &#8594;</button>
@@ -587,10 +589,10 @@
       <div class="upload-status hidden" id="formImageStatus"></div>
     </div>
 
-    <p class="hint-text" style="margin-top:8px;">We extract every question and answer each one from your CV and brief. You review before using.</p>
+    <p class="hint-text" style="margin-top:8px;">We answer every question from your brief. You review before sending.</p>
 
     <button class="btn-primary" onclick="FLOW.proceedFromForm()">Continue &#8594;</button>
-    <p class="hint-text" style="margin-top:6px;">Form answers are generated at the end — alongside your other assets.</p>
+    <p class="hint-text" style="margin-top:6px;">Form answers generate alongside everything else.</p>
   </section>
 
   <div class="step-collapsed hidden" id="step425Collapsed">
@@ -614,21 +616,21 @@
     <!-- Routing confirmation — only if Cover Letter selected -->
     <div class="routing-card hidden" id="routingCard">
       <div class="routing-card-header">
-        <span class="routing-card-label">Before we build — confirm the approach</span>
-        <p class="routing-card-sub">Pre-selected from your brief. Tap to change anything.</p>
+        <span class="routing-card-label">Confirm the approach</span>
+        <p class="routing-card-sub">Pre-selected from your brief. Change anything.</p>
       </div>
       <div class="routing-section" id="routingOpeningSection">
-        <p class="routing-section-title">How we open your cover letter</p>
+        <p class="routing-section-title">Opening</p>
         <div class="routing-options" id="routingOpeningOptions"></div>
       </div>
       <div class="routing-section" id="routingP3Section">
-        <p class="routing-section-title">How we connect you to the company</p>
+        <p class="routing-section-title">Company connection</p>
         <div class="routing-options" id="routingP3Options"></div>
       </div>
       <div class="loading hidden" id="loadingRouting">
         <div class="spinner"></div>
         <div class="loading-content">
-          <div class="loading-stage">Reading your brief to suggest the best approach…</div>
+          <div class="loading-stage">Reading your brief…</div>
         </div>
       </div>
     </div>
@@ -638,7 +640,7 @@
     <div class="loading hidden" id="loadingGenerate">
       <div class="spinner"></div>
       <div class="loading-content">
-        <div class="loading-stage" id="generateStage">Starting with the brief you approved…</div>
+        <div class="loading-stage" id="generateStage">Starting…</div>
         <div class="loading-substage" id="generateSubstage"></div>
         <div class="loading-stages-track">
           <div class="stage-dot active" id="gs0"></div>
@@ -657,12 +659,12 @@
     <div class="step-header">
       <span class="step-eyebrow">Step 5 of 5</span>
       <h2 class="step-title">Build Assets</h2>
-      <p class="step-subtitle" id="step5Sub">Your assets. Built from the brief you approved. Each scored, each refinable.</p>
+      <p class="step-subtitle" id="step5Sub">Built from the brief you approved. Each one refinable.</p>
     </div>
 
     <!-- Peak moment — persistent, single pulse, never disappears (Peak-End Rule) -->
     <div class="momentum-reveal hidden" id="momentumReveal">
-      <span class="momentum-label">&#127775; Assets ready</span>
+      <span class="momentum-label">✦ Assets ready</span>
       <p class="momentum-text" id="momentumRevealText"></p>
     </div>
 
@@ -676,26 +678,26 @@
     <div class="end-moment hidden" id="endMoment">
       <span class="end-moment-icon">&#10024;</span>
       <h3 class="end-moment-title">Your assets are ready.</h3>
-      <p class="end-moment-sub">Built from one brief. Specific to this role, this company, traceable to the argument you approved.</p>
+      <p class="end-moment-sub">One brief. Specific to this role and this company.</p>
 
       <!-- Done button — triggers rating -->
       <div id="doneSection">
         <button class="btn-primary" onclick="FLOW.showRating()" style="margin-top:16px;">
-          Done with this application &#8594;
+          Done with this application →
         </button>
       </div>
 
       <!-- Rating section — hidden until Done is clicked -->
       <div class="rating-section hidden" id="ratingSection">
-        <p class="rating-label">How did we do? Rate each asset.</p>
-        <p class="hint-text" style="margin-bottom:16px;">Your rating helps us improve every output.</p>
+        <p class="rating-label">Rate each asset.</p>
+        <p class="hint-text" style="margin-bottom:16px;">Ratings make the next one sharper.</p>
 
         <div id="assetRatings"></div>
 
         <div class="field-group" style="margin-top:16px;">
-          <label class="field-label" style="font-size:13px;">What could have been better? <span style="font-weight:400;color:var(--text3);">Optional</span></label>
+          <label class="field-label" style="font-size:13px;">What missed the mark? <span style="font-weight:400;color:var(--text3);">Optional</span></label>
           <textarea class="textarea" id="ratingFeedback" rows="2"
-            placeholder="Anything that felt off, generic, or missed the mark…"></textarea>
+            placeholder="What felt off, generic, or missed the point…"></textarea>
         </div>
 
         <button class="btn-primary" onclick="FLOW.submitRating()" style="margin-top:12px;">Submit &#8594;</button>
@@ -703,19 +705,19 @@
 
       <!-- Post-rating paths — hidden until rating submitted -->
       <div class="rating-paths hidden" id="ratingPaths">
-        <p class="rating-thankyou">Thank you. Every rating makes the next output sharper.</p>
+        <p class="rating-thankyou">Thank you. Every rating sharpens what comes next.</p>
         <div class="end-moment-actions">
-          <button class="btn-primary" onclick="FLOW.resetAll()">&#8635; Start a new application</button>
+          <button class="btn-primary" onclick="FLOW.resetAll()">↺ New application</button>
         </div>
         <button class="reset-link" onclick="FLOW.showSuggestions()" style="margin-top:12px;display:block;">
-          Share a suggestion for us
+          Suggest something
         </button>
       </div>
 
       <!-- Suggestions field — hidden until link clicked -->
       <div class="hidden" id="suggestionsSection" style="margin-top:16px;">
         <textarea class="textarea" id="suggestionsText" rows="3"
-          placeholder="What would you want this product to do that it doesn't yet?"></textarea>
+          placeholder="One thing this product should do that it doesn't."></textarea>
         <button class="btn-secondary" onclick="FLOW.submitSuggestion()" style="margin-top:8px;">Send</button>
       </div>
     </div>
