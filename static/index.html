@@ -1,731 +1,984 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Outreach Architect — reframe your worth. Turn your CV and a job description into a complete, personalised application package built from evidence, not templates.">
-<meta name="theme-color" content="#1a1a1a">
-<title>Outreach Architect</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Inter:wght@400;500&family=Fraunces:ital,wght@1,300;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-
-<!-- Toast -->
-<div class="toast hidden" id="toast"></div>
-
-<!-- Momentum singleton -->
-<div id="momentumSingleton">
-  <span class="momentum-label" id="momentumLabel"></span>
-  <p class="momentum-text" id="momentumText"></p>
-  <p class="momentum-thread hidden" id="momentumThread"></p>
-</div>
-
-<!-- App shell: sidebar rail + main content -->
-<div class="app-shell">
-
-  <!-- LEFT RAIL — progress sidebar. Done steps are clickable to re-open -->
-  <nav class="sidebar-rail" id="sidebarRail">
-    <div class="sidebar-brand">Outreach Architect</div>
-    <div class="sidebar-steps">
-
-      <div class="sidebar-step todo" id="srail1" data-step="1" onclick="FLOW.sidebarStepClick(1)">
-        <span class="srail-num">01</span>
-        <div class="srail-label"><span class="srail-name">Your Story</span></div>
-        <div class="srail-check hidden">✓</div>
-      </div>
-
-      <div class="sidebar-step todo" id="srail2" data-step="2" onclick="FLOW.sidebarStepClick(2)">
-        <span class="srail-num">02</span>
-        <div class="srail-label"><span class="srail-name">Set Role</span></div>
-        <div class="srail-check hidden">✓</div>
-      </div>
-
-      <div class="sidebar-step todo" id="srail3" data-step="3" onclick="FLOW.sidebarStepClick(3)">
-        <span class="srail-num">03</span>
-        <div class="srail-label"><span class="srail-name">Read Truth</span></div>
-        <div class="srail-check hidden">✓</div>
-      </div>
-
-      <div class="sidebar-step todo" id="srail35" data-step="3.5" onclick="FLOW.sidebarStepClick(3.5)">
-        <span class="srail-num">03.5</span>
-        <div class="srail-label"><span class="srail-name">Sharpen</span></div>
-        <div class="srail-check hidden">✓</div>
-      </div>
-
-      <div class="sidebar-step todo" id="srail4" data-step="4" onclick="FLOW.sidebarStepClick(4)">
-        <span class="srail-num">04</span>
-        <div class="srail-label"><span class="srail-name">Your Voice</span></div>
-        <div class="srail-check hidden">✓</div>
-      </div>
-
-      <div class="sidebar-step todo" id="srail5" data-step="5" onclick="FLOW.sidebarStepClick(5)">
-        <span class="srail-num">05</span>
-        <div class="srail-label"><span class="srail-name">Assets</span></div>
-        <div class="srail-check hidden">✓</div>
-      </div>
-
-    </div>
-    <button class="dm-btn" id="dmBtn" onclick="UI.toggleDark()">Dark mode</button>
-  </nav>
-
-  <!-- MAIN CONTENT -->
-  <main class="main">
-
-  <!-- Elevator navigation — appears after Step 1, floats left of main content -->
-  <div class="elevator-nav hidden" id="elevatorNav">
-    <button class="elevator-btn" id="elevatorUp" onclick="UI.elevatorUp()" title="Go to previous step" disabled>&#8679;</button>
-    <button class="elevator-btn" id="elevatorDown" onclick="UI.elevatorDown()" title="Go to next step" disabled>&#8681;</button>
-  </div>
-
-  <!-- One-time sidebar education tooltip -->
-  <div class="sidebar-tooltip hidden" id="sidebarTooltip">
-    Your steps are saved here. Click any completed step to go back and edit.
-  </div>
-
-  <div class="hero">
-    <h1 class="hero-title">Outreach Architect</h1>
-    <p class="hero-tagline">Reframe your worth. Built from evidence, not templates.</p>
-  </div>
-
-  <!-- ═══════════════════════════════════════
-       STEP 0 — CHOOSE WHAT TO BUILD
-  ═══════════════════════════════════════ -->
-  <section class="step active" id="step0">
-    <div class="step-header">
-      <p class="step-eyebrow">Start here</p>
-      <h2 class="step-title">What do you need?</h2>
-      <p class="step-subtitle" id="step0Sub">Choose what you need.</p>
-      <p class="step-proposition">One brief. One argument. Every asset built to prove it.</p>
-    </div>
-
-    <!-- Asset grid: 2+2+1 layout — no orphaned cards on any screen size -->
-    <!-- Row 1: 2 cards — the two most common -->
-    <div class="asset-grid asset-grid-2col" id="assetSelectGrid">
-      <div class="asset-card" data-asset="Cover Letter" onclick="FLOW.toggleAssetCard(this)">
-        <span class="asset-card-icon">✍️</span>
-        <span class="asset-card-name">Cover Letter</span>
-        <span class="asset-card-desc">Written from your profile for this job.</span>
-      </div>
-      <div class="asset-card" data-asset="Resume Bullets" onclick="FLOW.toggleAssetCard(this)">
-        <span class="asset-card-icon">📋</span>
-        <span class="asset-card-name">Resume Bullets</span>
-        <span class="asset-card-desc">Your bullets, rewritten to get selected.</span>
-      </div>
-    </div>
-    <!-- Row 2: 2 cards -->
-    <div class="asset-grid asset-grid-2col" style="margin-top:0;">
-      <div class="asset-card" data-asset="Interview Prep" onclick="FLOW.toggleAssetCard(this)">
-        <span class="asset-card-icon">🎯</span>
-        <span class="asset-card-name">Interview Prep</span>
-        <span class="asset-card-desc">The right questions. Your best answers.</span>
-      </div>
-      <div class="asset-card" data-asset="Cold Outreach Email" onclick="FLOW.toggleAssetCard(this)">
-        <span class="asset-card-icon">📩</span>
-        <span class="asset-card-name">Cold Outreach Email</span>
-        <span class="asset-card-desc">Three sentences. One specific observation.</span>
-      </div>
-    </div>
-    <!-- Row 3: full width — only one, always clean -->
-    <div class="asset-grid-full" style="margin-top:0;margin-bottom:8px;">
-      <div class="asset-card" data-asset="Answer Application Form" onclick="FLOW.toggleAssetCard(this)">
-        <span class="asset-card-icon">📝</span>
-        <span class="asset-card-name">Answer Application Form</span>
-        <span class="asset-card-desc">Every question answered from your brief.</span>
-      </div>
-    </div>
-    <!-- Full package — full width below -->
-    <div class="full-package-card" id="fullPackageCard" onclick="FLOW.toggleFullPackage()">
-      <div class="full-package-inner">
-        <div class="full-package-body">
-          <span class="full-package-name">⭐ Full Application Package</span>
-          <span class="full-package-desc">Every asset, built from one brief. Nothing extra.</span>
-        </div>
-        <div class="full-package-check" id="fullPackageCheck"></div>
-      </div>
-    </div>
-
-    <div class="asset-nudge hidden" id="assetNudge"></div>
-    <button class="btn-primary" id="step0Btn" onclick="FLOW.completeStep0()">Continue &#8594;</button>
-  </section>
-
-  <!-- ═══════════════════════════════════════
-       STEP 1 — YOUR STORY
-  ═══════════════════════════════════════ -->
-  <section class="step hidden" id="step1">
-    <div class="step-header">
-      <span class="step-eyebrow">Step 1 of 5</span>
-      <h2 class="step-title">Your Story</h2>
-      <p class="step-subtitle" id="step1Sub">Add your CV. The more complete, the sharper we argue.</p>
-    </div>
-
-    <div class="privacy-badge">
-      <span>&#128274;</span>
-      Your CV stays private. Used only to build your brief — never stored, never shared.
-    </div>
-
-    <div class="field-group">
-      <label class="field-label">How would you like to add your CV?</label>
-      <div class="toggle-row">
-        <button class="toggle-btn active" id="cvPasteBtn" onclick="FLOW.switchMethod('cv','paste')">Paste text</button>
-        <button class="toggle-btn"        id="cvUploadBtn" onclick="FLOW.switchMethod('cv','upload')">Upload file</button>
-      </div>
-    </div>
-
-    <div id="cvPasteArea" class="field-group">
-      <textarea class="textarea" id="cvText" rows="10" placeholder="Paste your full CV — work experience, achievements, metrics. We read between the lines."></textarea>
-    </div>
-
-    <div id="cvUploadArea" class="field-group hidden">
-      <label class="upload-zone" id="cvUploadZone"
-        ondragover="FLOW.handleDragOver(event,'cvUploadZone')"
-        ondragleave="FLOW.handleDragLeave(event,'cvUploadZone')"
-        ondrop="FLOW.handleDrop(event,'cv')">
-        <span class="upload-icon">&#8679;</span>
-        <span class="upload-label">Drop your CV here or click to browse</span>
-        <span class="upload-hint">.txt  .md  .pdf  .docx</span>
-        <input type="file" id="cvFile" accept=".txt,.md,.pdf,.docx" onchange="FLOW.handleFile(event,'cv')" style="display:none">
-      </label>
-      <div class="upload-status hidden" id="cvFileStatus"></div>
-    </div>
-
-    <p class="hint-text">Columns and tables break ATS parsing. Paste the text version if your CV uses them.</p>
-
-    <!-- ATS extraction note + extracted text preview — shown after file upload -->
-    <div class="cv-extraction-note hidden" id="cvExtractionNote"></div>
-    <div class="hidden" id="cvExtractedPreview" style="margin-top:8px;">
-      <label class="field-label" style="font-size:11px;color:var(--text4);margin-bottom:6px;display:block;">
-        Extracted text — this is exactly what an ATS reads from your file. Edit anything that looks wrong before continuing.
-      </label>
-      <textarea class="textarea" id="cvExtractedText" rows="6"
-        style="font-size:12px;font-family:var(--font-ui);color:var(--text3);line-height:1.5;"
-        placeholder="Extracted CV text will appear here…"></textarea>
-    </div>
-
-    <button class="btn-primary" onclick="FLOW.completeStep1()">Continue &#8594;</button>
-  </section>
-
-  <div class="step-collapsed hidden" id="step1Collapsed">
-    <div class="collapsed-inner">
-      <div class="collapsed-left">
-        <span class="check-badge">&#10003;</span>
-        <div><span class="collapsed-eyebrow">Step 1</span><span class="collapsed-name">Your Story</span></div>
-      </div>
-      <div class="collapsed-right">
-        <span class="collapsed-summary" id="step1Summary">Story loaded</span>
-        <button class="edit-btn" onclick="FLOW.editStep('step1','step1Collapsed')">Edit</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════
-       STEP 2 — SET ROLE
-  ═══════════════════════════════════════ -->
-  <section class="step hidden" id="step2">
-    <div class="step-header">
-      <span class="step-eyebrow">Step 2 of 5</span>
-      <h2 class="step-title">Set Role</h2>
-      <p class="step-subtitle" id="step2Sub">Paste the full job description — we'll find what they actually need, not just what they listed.</p>
-    </div>
-
-    <!-- Stage indicator — makes the UX flow explicit -->
-    <div class="flow-stages" id="flowStages">
-      <div class="flow-stage active" id="flowStage1">
-        <span class="flow-stage-num">1</span>
-        <span class="flow-stage-label">Add JD</span>
-      </div>
-      <div class="flow-stage-line"></div>
-      <div class="flow-stage" id="flowStage2">
-        <span class="flow-stage-num">2</span>
-        <span class="flow-stage-label">Decode</span>
-      </div>
-      <div class="flow-stage-line"></div>
-      <div class="flow-stage" id="flowStage3">
-        <span class="flow-stage-num">3</span>
-        <span class="flow-stage-label">Confirm</span>
-      </div>
-      <div class="flow-stage-line"></div>
-      <div class="flow-stage" id="flowStage4">
-        <span class="flow-stage-num">4</span>
-        <span class="flow-stage-label">Select</span>
-      </div>
-    </div>
-
-    <div class="field-group">
-      <label class="field-label">How would you like to add the job description?</label>
-      <div class="toggle-row">
-        <button class="toggle-btn active" id="jdPasteBtn" onclick="FLOW.switchJdMethod('paste')">Paste text</button>
-        <button class="toggle-btn"        id="jdImageBtn" onclick="FLOW.switchJdMethod('image')">Upload image</button>
-        <button class="toggle-btn"        id="jdUploadBtn" onclick="FLOW.switchJdMethod('upload')">Upload PDF</button>
-      </div>
-    </div>
-
-    <div id="jdPasteArea" class="field-group">
-      <textarea class="textarea" id="jdText" rows="8" placeholder="Paste the full JD — even the language they use tells us what they value. Don't summarise."></textarea>
-    </div>
-
-    <div id="jdImageArea" class="field-group hidden">
-      <label class="upload-zone" id="jdImageZone"
-        ondragover="FLOW.handleDragOver(event,'jdImageZone')"
-        ondragleave="FLOW.handleDragLeave(event,'jdImageZone')"
-        ondrop="FLOW.handleDropJdImage(event)">
-        <span class="upload-icon">&#8679;</span>
-        <span class="upload-label">Drop a screenshot or photo of the JD here</span>
-        <span class="upload-hint">.jpg  .jpeg  .png</span>
-        <input type="file" id="jdImageFile" accept=".jpg,.jpeg,.png" onchange="FLOW.handleJdImage(event)" style="display:none">
-      </label>
-      <div class="upload-status hidden" id="jdImageStatus"></div>
-      <!-- Extracted text preview — editable before continuing -->
-      <div id="jdImagePreview" class="hidden" style="margin-top:12px;">
-        <label class="field-label" style="font-size:12px;color:var(--text3);">Extracted text — review and edit if needed</label>
-        <textarea class="textarea" id="jdImageText" rows="8" placeholder="Extracted JD text will appear here…"></textarea>
-      </div>
-    </div>
-
-    <div id="jdUploadArea" class="field-group hidden">
-      <label class="upload-zone" id="jdUploadZone"
-        ondragover="FLOW.handleDragOver(event,'jdUploadZone')"
-        ondragleave="FLOW.handleDragLeave(event,'jdUploadZone')"
-        ondrop="FLOW.handleDrop(event,'jd')">
-        <span class="upload-icon">&#8679;</span>
-        <span class="upload-label">Drop the job description PDF here or click to browse</span>
-        <span class="upload-hint">.pdf</span>
-        <input type="file" id="jdFile" accept=".pdf" onchange="FLOW.handleJdPdf(event)" style="display:none">
-      </label>
-      <div class="upload-status hidden" id="jdFileStatus"></div>
-      <!-- Extracted text preview for PDF -->
-      <div id="jdPdfPreview" class="hidden" style="margin-top:12px;">
-        <label class="field-label" style="font-size:12px;color:var(--text3);">Extracted text — review and edit if needed</label>
-        <textarea class="textarea" id="jdPdfText" rows="8" placeholder="Extracted JD text will appear here…"></textarea>
-      </div>
-    </div>
-
-    <!-- e.g. MakeMyTrip — always visible, user can pre-fill -->
-    <div class="field-group" style="margin-top:4px;">
-      <label class="field-label" style="font-size:12px;color:var(--text3);">Company name <span style="font-weight:400;color:var(--text3);">— detected automatically, or type it</span></label>
-      <input class="input-text" id="manualCompany" type="text" placeholder="e.g. Google, Stripe, Monzo…">
-    </div>
-
-    <button class="btn-primary" id="researchBtn" onclick="FLOW.runResearch()">Decode this role &#8594;</button>
-
-    <!-- Loading state — properly wrapped -->
-    <div class="loading hidden" id="loadingResearch">
-      <div class="spinner"></div>
-      <div class="loading-content">
-        <div class="loading-stage" id="researchStage">Reading the job description…</div>
-        <div class="loading-substage" id="researchSubstage"></div>
-        <div class="loading-stages-track">
-          <div class="stage-dot active" id="rs0"></div>
-          <div class="stage-dot" id="rs1"></div>
-          <div class="stage-dot" id="rs2"></div>
-          <div class="stage-dot" id="rs3"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Step 2b: Org & Role confirmation — shown after research succeeds -->
-    <div class="hidden" id="orgRoleConfirm">
-      <div class="confirm-card">
-        <p class="confirm-card-label">&#10003; Detected — edit anything we got wrong</p>
-        <div class="confirm-fields">
-          <div class="confirm-field">
-            <label class="confirm-field-label">Company</label>
-            <div class="confirm-input-wrap">
-              <input class="input-text confirm-input" id="confirmedCompany" type="text" placeholder="Company name">
-              <span class="confirm-edit-hint">&#9998; edit</span>
-            </div>
-          </div>
-          <div class="confirm-field">
-            <label class="confirm-field-label">Role</label>
-            <div class="confirm-input-wrap">
-              <input class="input-text confirm-input" id="confirmedRole" type="text" placeholder="e.g. Product Manager">
-              <span class="confirm-edit-hint">&#9998; edit</span>
-            </div>
-          </div>
-        </div>
-        <p class="hint-text" style="color:var(--warn);">Wrong? Fix it — these flow into every asset.</p>
-      </div>
-
-      <!-- Company briefing — shown expanded by default after research completes -->
-      <!-- div-based (not details) — controlled by show('companyBriefing') in FLOW -->
-      <div class="briefing-accordion hidden" id="companyBriefing" style="margin-top:12px;">
-        <div class="briefing-header" onclick="
-          const body = this.nextElementSibling;
-          const arrow = this.querySelector('.briefing-arrow');
-          body.classList.toggle('hidden');
-          arrow.textContent = body.classList.contains('hidden') ? '↓' : '↑';
-        ">
-          <span>What we found about this company</span>
-          <span class="briefing-arrow">↑</span>
-        </div>
-        <div class="briefing-body" id="briefingBody">
-          <!-- Populated by FLOW.runResearch() before show() is called -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Step 2c: Pain points — shown after confirmation -->
-    <div class="hidden" id="painPointsSection">
-      <div class="field-group" style="margin-top:18px;">
-        <p class="field-label" style="margin-bottom:8px;">What they actually need right now — choose the two where your evidence is strongest</p>
-        <p class="hint-text" style="margin-bottom:12px;">These two pain points become the argument. Every asset we build will prove you can solve them.</p>
-
-        <div class="pain-counter">
-          <div class="pain-counter-pips">
-            <div class="pain-pip" id="pip-a"></div>
-            <div class="pain-pip" id="pip-b"></div>
-          </div>
-          <span id="painCounterText">0 of 2 selected</span>
-        </div>
-
-        <div id="painPointsList" class="pain-list"></div>
-      </div>
-
-      <button class="context-trigger hidden" id="contextTrigger" onclick="FLOW.showContext()">
-        + Know something about this company the JD doesn't say?
-      </button>
-      <div class="hidden" id="contextArea">
-        <div class="field-group context-expanded">
-          <textarea class="textarea" id="userInstruction" rows="2" placeholder="e.g. I spoke to their Head of Product last week — they're rebuilding the data stack from scratch."></textarea>
-          <p class="hint-text">What you know that we can't research. Your input here has more weight than anything we found online.</p>
-        </div>
-      </div>
-
-      <button class="btn-primary" id="confirmPainBtn" onclick="FLOW.confirmPainPoints()">Lock these in &#8594;</button>
-
-      <div class="loading hidden" id="loadingQuestions">
-        <div class="spinner"></div>
-        <div class="loading-content">
-          <div class="loading-stage">Setting up your brief. One moment…</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <div class="step-collapsed hidden" id="step2Collapsed">
-    <div class="collapsed-inner">
-      <div class="collapsed-left">
-        <span class="check-badge">&#10003;</span>
-        <div><span class="collapsed-eyebrow">Step 2</span><span class="collapsed-name">Set Role</span></div>
-      </div>
-      <div class="collapsed-right">
-        <span class="collapsed-summary" id="step2Summary">Role set</span>
-        <button class="edit-btn" onclick="FLOW.editStep('step2','step2Collapsed')">Edit</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════
-       STEP 3 — READ TRUTH
-  ═══════════════════════════════════════ -->
-  <section class="step hidden" id="step3">
-    <div class="step-header">
-      <span class="step-eyebrow">Step 3 — Read Truth</span>
-      <h2 class="step-title">Read Truth</h2>
-      <p class="step-subtitle" id="step3Sub">Read what we found. Approve the argument — then we build.</p>
-    </div>
-
-    <!-- Narrative thread — the primary moment, serif, prominent -->
-    <div class="narrative-reveal hidden" id="narrativeReveal">
-      <p class="narrative-eyebrow">Your application argues</p>
-      <p class="narrative-thread" id="narrativeThread"></p>
-    </div>
-
-    <!-- Fit analysis — two column Parker layout -->
-    <div class="gap-analysis" id="gapAnalysis">
-      <p class="placeholder-text">Complete Step 2 first — your fit analysis will appear here.</p>
-    </div>
-
-    <!-- Angle — left-border callout, surfaces after gap analysis -->
-    <div class="angle-callout hidden" id="angleCallout">
-      <p class="angle-eyebrow">Angle</p>
-      <p class="angle-text" id="angleText"></p>
-    </div>
-
-    <button class="btn-primary hidden" id="approveBtn" onclick="FLOW.approveBrief()">This is my argument. Build on it &#8594;</button>
-
-    <div class="loading hidden" id="loadingBullets">
-      <div class="spinner"></div>
-      <div class="loading-content">
-        <div class="loading-stage">Finding which experiences make the strongest case for this role…</div>
-      </div>
-    </div>
-  </section>
-
-  <div class="step-collapsed hidden" id="step3Collapsed">
-    <div class="collapsed-inner">
-      <div class="collapsed-left">
-        <span class="check-badge">&#10003;</span>
-        <div><span class="collapsed-eyebrow">Step 3</span><span class="collapsed-name">Read Truth</span></div>
-      </div>
-      <div class="collapsed-right">
-        <span class="collapsed-summary">Truth Read</span>
-        <button class="edit-btn" onclick="FLOW.editStep('step3','step3Collapsed')">Edit</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════
-       STEP 3.5 — SHARPEN TRUTH
-  ═══════════════════════════════════════ -->
-  <section class="step hidden" id="step35">
-    <div class="step-header">
-      <span class="step-eyebrow">Step 3.5</span>
-      <h2 class="step-title">Sharpen Truth</h2>
-      <p class="step-subtitle" id="step35Sub">One question per bullet. Your answer becomes evidence.</p>
-    </div>
-
-    <div class="trust-line">Your answers are used to strengthen your assets. They never appear word-for-word.</div>
-
-    <!-- Bullet diagnosis cards — populated by approveBrief() -->
-    <div class="bullet-diagnosis hidden" id="bulletDiagnosis"></div>
-
-    <!-- One fixed open field — replaces Q1-Q4 entirely -->
-    <div class="field-group" style="margin-top:20px;">
-      <label class="field-label">Anything that would strengthen your case <span style="font-weight:400;color:var(--text3);">— optional</span></label>
-      <textarea class="textarea" id="anythingMissed" rows="3"
-        placeholder="Anything your CV doesn't show — a project in progress, context behind a number, something that didn't make it into the document."></textarea>
-    </div>
-
-    <button class="btn-primary" onclick="FLOW.proceedToTexture()">Continue &#8594;</button>
-    <p class="hint-text" style="margin-top:8px;">Optional. Every answer makes the output more specific.</p>
-  </section>
-
-  <div class="step-collapsed hidden" id="step35Collapsed">
-    <div class="collapsed-inner">
-      <div class="collapsed-left">
-        <span class="check-badge">&#10003;</span>
-        <div><span class="collapsed-eyebrow">Step 3.5</span><span class="collapsed-name">Sharpen Truth</span></div>
-      </div>
-      <div class="collapsed-right">
-        <span class="collapsed-summary">Truth Sharpened</span>
-        <button class="edit-btn" onclick="FLOW.editStep('step35','step35Collapsed')">Edit</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════
-       STEP 4 — DEFINE TEXTURE
-  ═══════════════════════════════════════ -->
-  <section class="step hidden" id="step4">
-    <div class="step-header">
-      <span class="step-eyebrow">Step 4 of 5</span>
-      <h2 class="step-title">Your Voice</h2>
-      <p class="step-subtitle" id="step4Sub">Both optional. Both change how every asset sounds.</p>
-    </div>
-
-    <!-- Referral — shown when Cover Letter or Cold Outreach Email selected -->
-    <div class="field-group voice-field" id="referralField">
-      <label class="field-label">Were you referred by someone? <span class="field-optional">Optional</span></label>
-      <input class="input-text" id="referralName" type="text"
-        placeholder="Their name — we open your letter differently. First sentence references them, not you.">
-      <p class="hint-text">A referral changes the opening of every asset we write.</p>
-    </div>
-
-    <!-- Writing sample — shown when Cover Letter or Cold Outreach Email selected -->
-    <div class="field-group voice-field" id="writingSampleField" style="margin-top:6px;padding-top:20px;border-top:1px solid var(--divider);">
-      <label class="field-label">Paste something you've written <span class="field-optional">Optional but valuable</span></label>
-      <textarea class="textarea" id="writingSample" rows="4"
-        placeholder="Any piece of writing that sounds like you — an email, a message, a post. We take the rhythm, not the words."></textarea>
-      <p class="hint-text">We read the rhythm and formality. Every asset sounds like you — not a template.</p>
-    </div>
-
-    <!-- No-voice note — shown when neither Cover Letter nor Cold Email selected -->
-    <div class="field-group hidden" id="noVoiceNote">
-      <p class="hint-text">These assets don't need a writing sample. We build from your brief.</p>
-    </div>
-
-    <button class="btn-primary" onclick="FLOW.proceedToChoosePath()">Continue &#8594;</button>
-  </section>
-
-  <div class="step-collapsed hidden" id="step4Collapsed">
-    <div class="collapsed-inner">
-      <div class="collapsed-left">
-        <span class="check-badge">&#10003;</span>
-        <div><span class="collapsed-eyebrow">Step 4</span><span class="collapsed-name">Define Texture</span></div>
-      </div>
-      <div class="collapsed-right">
-        <span class="collapsed-summary">Texture Defined</span>
-        <button class="edit-btn" onclick="FLOW.editStep('step4','step4Collapsed')">Edit</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════
-       STEP 4.25 — FORM INPUT (only if Answer Application Form selected)
-  ═══════════════════════════════════════ -->
-  <section class="step hidden" id="step425">
-    <div class="step-header">
-      <span class="step-eyebrow">Application Form</span>
-      <h2 class="step-title">Your Form Questions</h2>
-      <p class="step-subtitle" id="step425Sub">Paste your application questions — we'll answer every one from the brief you approved.</p>
-    </div>
-
-    <div class="field-group">
-      <label class="field-label">How would you like to add the form questions?</label>
-      <div class="toggle-row">
-        <button class="toggle-btn active" id="formPasteBtn" onclick="FLOW.switchFormMethod('paste')">Paste questions</button>
-        <button class="toggle-btn"        id="formImageBtn" onclick="FLOW.switchFormMethod('image')">Upload screenshot</button>
-      </div>
-    </div>
-
-    <div id="formPasteArea" class="field-group">
-      <textarea class="textarea" id="formText" rows="8"
-        placeholder="Paste the questions exactly as they appear — including any word limits. We answer from your brief, not from templates."></textarea>
-    </div>
-
-    <div id="formImageArea" class="field-group hidden">
-      <label class="upload-zone" id="formImageZone"
-        ondragover="FLOW.handleDragOver(event,'formImageZone')"
-        ondragleave="FLOW.handleDragLeave(event,'formImageZone')"
-        ondrop="FLOW.handleDropFormImage(event)">
-        <span class="upload-icon">&#8679;</span>
-        <span class="upload-label">Drop a screenshot of the application form here</span>
-        <span class="upload-hint">.jpg  .jpeg  .png</span>
-        <input type="file" id="formImageFile" accept=".jpg,.jpeg,.png" onchange="FLOW.handleFormImage(event)" style="display:none">
-      </label>
-      <div class="upload-status hidden" id="formImageStatus"></div>
-    </div>
-
-    <p class="hint-text" style="margin-top:8px;">We answer every question from your brief. You review before sending.</p>
-
-    <button class="btn-primary" onclick="FLOW.proceedFromForm()">Continue &#8594;</button>
-    <p class="hint-text" style="margin-top:6px;">Form answers generate alongside everything else.</p>
-  </section>
-
-  <div class="step-collapsed hidden" id="step425Collapsed">
-    <div class="collapsed-inner">
-      <div class="collapsed-left">
-        <span class="check-badge">&#10003;</span>
-        <div><span class="collapsed-eyebrow">Form</span><span class="collapsed-name">Your Form Questions</span></div>
-      </div>
-      <div class="collapsed-right">
-        <span class="collapsed-summary" id="step425Summary">Form ready</span>
-        <button class="edit-btn" onclick="FLOW.editStep('step425','step425Collapsed')">Edit</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════
-       GENERATE SECTION — shown after Step 4
-  ═══════════════════════════════════════ -->
-  <div class="hidden" id="generateSection">
-
-    <!-- Routing confirmation — only if Cover Letter selected -->
-    <div class="routing-card hidden" id="routingCard">
-      <div class="routing-card-header">
-        <span class="routing-card-label">Confirm the approach</span>
-        <p class="routing-card-sub">Pre-selected from your brief. Change anything.</p>
-      </div>
-      <div class="routing-section" id="routingOpeningSection">
-        <p class="routing-section-title">Opening</p>
-        <div class="routing-options" id="routingOpeningOptions"></div>
-      </div>
-      <div class="routing-section" id="routingP3Section">
-        <p class="routing-section-title">Company connection</p>
-        <div class="routing-options" id="routingP3Options"></div>
-      </div>
-      <div class="loading hidden" id="loadingRouting">
-        <div class="spinner"></div>
-        <div class="loading-content">
-          <div class="loading-stage">Reading your brief…</div>
-        </div>
-      </div>
-    </div>
-
-    <button class="btn-primary" id="generateBtn" onclick="FLOW.generateAssets()">Build &#8594;</button>
-
-    <div class="loading hidden" id="loadingGenerate">
-      <div class="spinner"></div>
-      <div class="loading-content">
-        <div class="loading-stage" id="generateStage">Starting…</div>
-        <div class="loading-substage" id="generateSubstage"></div>
-        <div class="loading-stages-track">
-          <div class="stage-dot active" id="gs0"></div>
-          <div class="stage-dot" id="gs1"></div>
-          <div class="stage-dot" id="gs2"></div>
-          <div class="stage-dot" id="gs3"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════
-       STEP 5 — BUILD ASSETS
-  ═══════════════════════════════════════ -->
-  <section class="step hidden" id="step5">
-    <div class="step-header">
-      <span class="step-eyebrow">Step 5 of 5</span>
-      <h2 class="step-title">Build Assets</h2>
-      <p class="step-subtitle" id="step5Sub">Built from the brief you approved. Each one refinable.</p>
-    </div>
-
-    <!-- Peak moment — persistent, single pulse, never disappears (Peak-End Rule) -->
-    <div class="momentum-reveal hidden" id="momentumReveal">
-      <span class="momentum-label">✦ Assets ready</span>
-      <p class="momentum-text" id="momentumRevealText"></p>
-    </div>
-
-    <!-- Tab bar — dynamically populated with only generated assets (Hick's Law) -->
-    <div class="tabs-row" id="tabsRow"></div>
-
-    <!-- Tab panels — all hidden, populated dynamically -->
-    <div id="tabPanels"></div>
-
-    <!-- End moment — only appears after user clicks Done -->
-    <div class="end-moment hidden" id="endMoment">
-      <span class="end-moment-icon">&#10024;</span>
-      <h3 class="end-moment-title">Your assets are ready.</h3>
-      <p class="end-moment-sub">One brief. Specific to this role and this company.</p>
-
-      <!-- Done button — triggers rating -->
-      <div id="doneSection">
-        <button class="btn-primary" onclick="FLOW.showRating()" style="margin-top:16px;">
-          Done with this application →
-        </button>
-      </div>
-
-      <!-- Rating section — hidden until Done is clicked -->
-      <div class="rating-section hidden" id="ratingSection">
-        <p class="rating-label">Rate each asset.</p>
-        <p class="hint-text" style="margin-bottom:16px;">Ratings make the next one sharper.</p>
-
-        <div id="assetRatings"></div>
-
-        <div class="field-group" style="margin-top:16px;">
-          <label class="field-label" style="font-size:13px;">What missed the mark? <span style="font-weight:400;color:var(--text3);">Optional</span></label>
-          <textarea class="textarea" id="ratingFeedback" rows="2"
-            placeholder="What felt off, generic, or missed the point…"></textarea>
-        </div>
-
-        <button class="btn-primary" onclick="FLOW.submitRating()" style="margin-top:12px;">Submit &#8594;</button>
-      </div>
-
-      <!-- Post-rating paths — hidden until rating submitted -->
-      <div class="rating-paths hidden" id="ratingPaths">
-        <p class="rating-thankyou">Thank you. Every rating sharpens what comes next.</p>
-        <div class="end-moment-actions">
-          <button class="btn-primary" onclick="FLOW.resetAll()">↺ New application</button>
-        </div>
-        <button class="reset-link" onclick="FLOW.showSuggestions()" style="margin-top:12px;display:block;">
-          Suggest something
-        </button>
-      </div>
-
-      <!-- Suggestions field — hidden until link clicked -->
-      <div class="hidden" id="suggestionsSection" style="margin-top:16px;">
-        <textarea class="textarea" id="suggestionsText" rows="3"
-          placeholder="One thing this product should do that it doesn't."></textarea>
-        <button class="btn-secondary" onclick="FLOW.submitSuggestion()" style="margin-top:8px;">Send</button>
-      </div>
-    </div>
-  </section>
-
-</main>
-</div><!-- end app-shell -->
-
-<script src="/static/app.js"></script>
-</body>
-</html>
+/* ═══════════════════════════════════════════════════════════════
+   OUTREACH ARCHITECT — Design System v3
+   Raw Materials sidebar · Parker grid · Apple contrast · Vivid primaries
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Inter:wght@400;500&family=Fraunces:ital,wght@1,300;1,400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Light mode ─────────────────────────────────────────────────────────────── */
+:root {
+  /* Background: very slightly warm grey — not cream, not clinical white.
+     High enough contrast against cards. Doesn't fatigue the eyes. */
+  --bg:          #f8f7f5;
+  --card:        #ffffff;
+  --card-raised: #f0efed;
+  --card-inset:  #e8e6e2;
+  --border:      #dbd9d4;
+  --border-mid:  #b8b4ae;
+  --border-str:  #8a8780;
+  --text:        #111108;
+  --text2:       #2d2a20;
+  --text3:       #5c574a;
+  --text4:       #96907f;
+
+  /* Step colours — vivid, full saturation */
+  /* S1 Blue */
+  --s1-full:#1a6dd4; --s1-bg:#dbeafe; --s1-bd:#93c5fd;
+  --s1-tx:#0c1e48;   --s1-sub:#1e4080; --s1-num:#1a6dd4;
+  /* S2 Amber */
+  --s2-full:#d97706; --s2-bg:#fef3c7; --s2-bd:#fcd34d;
+  --s2-tx:#451a03;   --s2-sub:#92400e; --s2-num:#d97706;
+  /* S3 Emerald */
+  --s3-full:#059669; --s3-bg:#d1fae5; --s3-bd:#6ee7b7;
+  --s3-tx:#022c22;   --s3-sub:#065f46; --s3-num:#059669;
+  /* S3.5 Violet */
+  --s35-full:#7c3aed; --s35-bg:#ede9fe; --s35-bd:#c4b5fd;
+  --s35-tx:#1e0a3c;  --s35-sub:#4c1d95; --s35-num:#7c3aed;
+  /* S4 Rose */
+  --s4-full:#e11d48; --s4-bg:#ffe4e6; --s4-bd:#fda4af;
+  --s4-tx:#3b0014;   --s4-sub:#9f1239; --s4-num:#e11d48;
+  /* S5 Lime */
+  --s5-full:#65a30d; --s5-bg:#ecfccb; --s5-bd:#bef264;
+  --s5-tx:#1a2e05;   --s5-sub:#365314; --s5-num:#65a30d;
+
+  /* Sidebar block colours — vivid fills, white text */
+  --sb1:#1a6dd4; --sb2:#d97706; --sb3:#059669;
+  --sb35:#7c3aed; --sb4:#e11d48; --sb5:#65a30d;
+
+  --cta-bg:#111108; --cta-tx:#d4f542;
+
+  --ok:#059669;  --ok-bg:#d1fae5; --ok-bd:#6ee7b7; --ok-tx:#022c22;
+  --warn:#d97706; --warn-bg:#fef3c7; --warn-bd:#fcd34d; --warn-tx:#451a03;
+  --error:#e11d48; --err-bg:#ffe4e6; --err-bd:#fda4af; --err-tx:#3b0014;
+  --info:#1a6dd4;  --info-bg:#dbeafe; --info-bd:#93c5fd; --info-tx:#0c1e48;
+
+  --radius:10px; --rsm:7px; --rxs:4px;
+  --sidebar-w:240px;
+  --font-d:'Outfit',system-ui,sans-serif;
+  --font-ui:'Inter',system-ui,sans-serif;
+  --font-s:'Fraunces',Georgia,serif;
+}
+
+/* ── Dark mode ──────────────────────────────────────────────────────────────── */
+.dark {
+  --bg:#0a0a08; --card:#141410; --card-raised:#1e1e18; --card-inset:#111110;
+  --border:#2a2a22; --border-mid:#3a3a30; --border-str:#545448;
+  --text:#f4f1ea; --text2:#c8c5be; --text3:#88857e; --text4:#545448;
+
+  --s1-full:#3b82f6; --s1-bg:#0f1e30; --s1-bd:#1e3a58;
+  --s1-tx:#dbeafe;   --s1-sub:#93c5fd; --s1-num:#60a5fa;
+  --s2-full:#f59e0b; --s2-bg:#1c1400; --s2-bd:#3a2800;
+  --s2-tx:#fef3c7;   --s2-sub:#fcd34d; --s2-num:#fbbf24;
+  --s3-full:#10b981; --s3-bg:#0a1e10; --s3-bd:#143820;
+  --s3-tx:#d1fae5;   --s3-sub:#6ee7b7; --s3-num:#34d399;
+  --s35-full:#8b5cf6; --s35-bg:#160c30; --s35-bd:#2a1450;
+  --s35-tx:#ede9fe;   --s35-sub:#c4b5fd; --s35-num:#a78bfa;
+  --s4-full:#f43f5e; --s4-bg:#1e0810; --s4-bd:#3c1020;
+  --s4-tx:#ffe4e6;   --s4-sub:#fda4af; --s4-num:#fb7185;
+  --s5-full:#84cc16; --s5-bg:#101800; --s5-bd:#202800;
+  --s5-tx:#ecfccb;   --s5-sub:#bef264; --s5-num:#a3e635;
+
+  --sb1:#1d4ed8; --sb2:#b45309; --sb3:#047857;
+  --sb35:#6d28d9; --sb4:#be123c; --sb5:#4d7c0f;
+
+  --cta-bg:#d4f542; --cta-tx:#0a0a08;
+
+  --ok:#10b981;  --ok-bg:#0a1e10; --ok-bd:#143820; --ok-tx:#d1fae5;
+  --warn:#f59e0b; --warn-bg:#1c1400; --warn-bd:#3a2800; --warn-tx:#fef3c7;
+  --error:#f43f5e; --err-bg:#1e0810; --err-bd:#3c1020; --err-tx:#ffe4e6;
+  --info:#3b82f6;  --info-bg:#0f1e30; --info-bd:#1e3a58; --info-tx:#dbeafe;
+}
+
+/* ── Animations ─────────────────────────────────────────────────────────────── */
+@keyframes fadeUp    { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn    { from{opacity:0} to{opacity:1} }
+@keyframes spin      { to{transform:rotate(360deg)} }
+@keyframes pulse     { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes stepEnter { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }
+
+/* ── Base ───────────────────────────────────────────────────────────────────── */
+html { scroll-behavior:smooth; }
+body {
+  font-family:var(--font-ui); background:var(--bg); color:var(--text);
+  line-height:1.6; transition:background .35s,color .35s;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+
+/* ── App shell ──────────────────────────────────────────────────────────────── */
+.app-shell { display:flex; min-height:100vh; }
+
+/* ═══════════════════════════════════════════════════════
+   SIDEBAR — Raw Materials style, vivid full-colour blocks
+   ═══════════════════════════════════════════════════════ */
+.sidebar-rail {
+  width:var(--sidebar-w); flex-shrink:0;
+  background:var(--card); border-right:0.5px solid var(--border);
+  position:sticky; top:0; height:100vh;
+  display:flex; flex-direction:column;
+  transition:background .35s,border-color .35s;
+  z-index:100; overflow:hidden;
+}
+
+.sidebar-brand {
+  font-family:var(--font-d); font-size:10px; font-weight:700;
+  letter-spacing:0.12em; text-transform:uppercase; color:var(--text4);
+  padding:18px 20px 14px; border-bottom:0.5px solid var(--border);
+  flex-shrink:0;
+}
+
+.sidebar-steps {
+  flex:1; display:flex; flex-direction:column; overflow:hidden;
+}
+
+/* Each step is a full-colour block — Raw Materials style */
+.sidebar-step {
+  flex:1; display:flex; flex-direction:column;
+  justify-content:center; align-items:flex-start;
+  padding:0 20px;
+  border-left:4px solid transparent;
+  transition:opacity .3s, filter .3s, border-color .2s;
+  cursor:pointer; position:relative;
+  min-height:60px;
+}
+
+/* Vivid full-saturation block fills */
+.sidebar-step[data-step="1"]   { background:var(--sb1); border-left-color:rgba(255,255,255,0.3); }
+.sidebar-step[data-step="2"]   { background:var(--sb2); border-left-color:rgba(255,255,255,0.3); }
+.sidebar-step[data-step="3"]   { background:var(--sb3); border-left-color:rgba(255,255,255,0.3); }
+.sidebar-step[data-step="3.5"] { background:var(--sb35); border-left-color:rgba(255,255,255,0.3); }
+.sidebar-step[data-step="4"]   { background:var(--sb4); border-left-color:rgba(255,255,255,0.3); }
+.sidebar-step[data-step="5"]   { background:var(--sb5); border-left-color:rgba(255,255,255,0.3); }
+
+/* Todo — desaturated */
+.sidebar-step.todo { opacity:.38; filter:saturate(.2) brightness(.85); }
+
+/* Done — clickable, slightly dimmed */
+.sidebar-step.done { opacity:.72; filter:saturate(.7); }
+.sidebar-step.done:hover { opacity:.88; filter:saturate(.9); }
+
+/* Active — full vivid */
+.sidebar-step.active {
+  opacity:1; filter:none;
+  border-left-color:rgba(255,255,255,0.9);
+  border-left-width:5px;
+}
+.sidebar-step.active::after {
+  content:''; position:absolute; right:0; top:0; bottom:0;
+  width:3px; background:rgba(255,255,255,0.5);
+}
+
+/* Step number — small, top-left, white */
+.srail-num {
+  font-family:var(--font-d); font-size:9px; font-weight:700;
+  letter-spacing:0.12em; color:rgba(255,255,255,0.65);
+  display:block; margin-bottom:3px;
+}
+
+/* Step name — large, bold, white */
+.srail-name {
+  font-family:var(--font-d); font-size:15px; font-weight:800;
+  color:#ffffff; line-height:1.1; letter-spacing:-0.01em;
+}
+
+/* Done checkmark */
+.srail-check {
+  position:absolute; right:14px; top:50%; transform:translateY(-50%);
+  width:18px; height:18px; border-radius:50%;
+  background:rgba(255,255,255,0.25);
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; color:#fff; font-weight:700;
+}
+
+/* Indicator dot — hidden, replaced by colour block approach */
+.srail-indicator { display:none; }
+.srail-label { display:flex; flex-direction:column; }
+
+/* Dark mode button */
+.dm-btn {
+  flex-shrink:0; margin:12px 16px;
+  font-family:var(--font-ui); font-size:10px; font-weight:500;
+  padding:6px 14px; border-radius:20px;
+  border:1px solid var(--border-str);
+  background:var(--card); color:var(--text2);
+  cursor:pointer; transition:all .2s; white-space:nowrap;
+  align-self:center;
+}
+.dm-btn:hover { background:var(--text); color:var(--bg); border-color:var(--text); }
+/* In dark mode, restore translucent white style against the dark sidebar bottom */
+.dark .dm-btn {
+  background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.7);
+  border-color:rgba(255,255,255,0.2);
+}
+.dark .dm-btn:hover { background:rgba(255,255,255,0.2); color:#fff; }
+
+/* ── Main content ───────────────────────────────────────────────────────────── */
+.main { flex:1; max-width:680px; margin:0 auto; padding:32px 28px 100px; min-width:0; }
+
+/* ── Hero ───────────────────────────────────────────────────────────────────── */
+.hero { padding:44px 0 28px; }
+.hero-title {
+  font-family:var(--font-d); font-size:clamp(34px,5vw,52px); font-weight:800;
+  color:var(--text); letter-spacing:-0.03em; line-height:1.0; margin-bottom:10px;
+}
+.hero-tagline {
+  font-family:var(--font-s); font-style:italic; font-weight:300;
+  font-size:16px; color:var(--text3); line-height:1.65;
+}
+
+/* ── Steps ──────────────────────────────────────────────────────────────────── */
+.step {
+  background:var(--card); border:0.5px solid var(--border); border-radius:var(--radius);
+  padding:28px; margin-bottom:8px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06), 0 1px 8px rgba(0,0,0,.04);
+  animation:fadeUp .35s ease forwards; transition:background .3s,border-color .3s;
+}
+/* Active step gets left accent border in the step's identity colour */
+.step.active {
+  border-color:var(--border-mid);
+  border-left:3px solid var(--s1-full);
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
+}
+
+/* Collapsed cards — clearly subordinate, no competition with active step */
+.step-collapsed {
+  border:0.5px solid var(--border); border-radius:var(--radius);
+  padding:10px 14px; margin-bottom:4px; background:transparent;
+  opacity:.5; transition:all .25s; animation:fadeUp .3s ease forwards;
+  display:flex; align-items:center; gap:10px;
+}
+.step-collapsed:hover { opacity:.75; background:var(--card-raised); }
+.collapsed-inner { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; }
+.collapsed-left  { display:flex; align-items:center; gap:10px; min-width:0; }
+.collapsed-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.check-badge {
+  width:16px; height:16px; border-radius:50%; background:var(--ok); color:#fff;
+  font-size:8px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.collapsed-eyebrow { display:block; font-family:var(--font-ui); font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text4); }
+.collapsed-name    { font-family:var(--font-ui); font-size:12px; font-weight:500; color:var(--text3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.collapsed-summary { font-family:var(--font-ui); font-size:11px; color:var(--text4); flex-shrink:0; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.edit-btn {
+  font-family:var(--font-ui); font-size:10px; font-weight:500; padding:3px 8px;
+  border:0.5px solid var(--border); border-radius:var(--rxs);
+  background:transparent; color:var(--text4); cursor:pointer; transition:all .15s;
+}
+.edit-btn:hover { background:var(--card); color:var(--text2); border-color:var(--border-mid); }
+
+/* Step header */
+.step-header { margin-bottom:22px; }
+.step-eyebrow {
+  display:block; font-family:var(--font-ui); font-size:9px; font-weight:500;
+  letter-spacing:0.14em; text-transform:uppercase; color:var(--text4); margin-bottom:6px;
+}
+.step-title {
+  font-family:var(--font-d); font-size:clamp(22px,3.5vw,30px); font-weight:800;
+  color:var(--text); letter-spacing:-0.02em; line-height:1.1; margin-bottom:8px;
+}
+.step-subtitle { font-family:var(--font-ui); font-size:14px; color:var(--text3); line-height:1.6; }
+
+/* ═══════════════════════════════════════════════════════
+   STEP 0 — Parker 3+2 card grid + full package
+   ═══════════════════════════════════════════════════════ */
+/* 2-column grid used for all asset rows — consistent on every screen */
+.asset-grid-2col {
+  display:grid; grid-template-columns:repeat(2,1fr); gap:8px;
+  margin-bottom:8px;
+}
+/* Full width — single card row */
+.asset-grid-full {
+  display:grid; grid-template-columns:1fr; gap:8px;
+}
+/* Legacy — keep for any existing references */
+.asset-grid {
+  display:grid; grid-template-columns:repeat(2,1fr); gap:8px;
+  margin-bottom:8px;
+}
+.asset-grid-row2 {
+  display:grid; grid-template-columns:repeat(2,1fr); gap:8px;
+  margin-bottom:8px;
+}
+.asset-card {
+  background:var(--card); border:0.5px solid var(--border);
+  border-radius:var(--radius); padding:16px 14px;
+  cursor:pointer; transition:all .2s; position:relative;
+  display:flex; flex-direction:column; gap:6px;
+  min-height:90px;
+}
+.asset-card:hover { border-color:var(--border-mid); background:var(--card-raised); transform:translateY(-1px); }
+.asset-card.selected {
+  border-color:var(--s1-full); border-width:2px;
+  background:var(--s1-bg);
+  box-shadow:0 0 0 3px rgba(26,109,212,0.15);
+  transform:translateY(-1px);
+}
+.asset-card.selected .asset-card-name { color:var(--s1-full); }
+.asset-card.selected::after {
+  content:'✓'; position:absolute; top:10px; right:12px;
+  font-size:11px; font-weight:800; color:#fff;
+  background:var(--s1-full); border-radius:50%;
+  width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+  line-height:20px; text-align:center;
+  pointer-events:none;
+}
+.asset-card-icon { font-size:18px; display:block; pointer-events:none; }
+.asset-card-name {
+  font-family:var(--font-d); font-size:13px; font-weight:700; color:var(--text);
+  line-height:1.2; pointer-events:none;
+}
+.asset-card-desc { font-family:var(--font-ui); font-size:11px; color:var(--text3); line-height:1.4; pointer-events:none; }
+
+/* Full package — full width, gold treatment */
+.full-package-card {
+  border:0.5px solid var(--border); border-radius:var(--radius);
+  padding:16px 18px; background:var(--card); margin-bottom:14px;
+  cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.full-package-card:hover { border-color:var(--border-mid); background:var(--card-raised); transform:translateY(-1px); }
+.full-package-card.selected { border-color:var(--s5-full); border-width:1.5px; background:var(--s5-bg); }
+.full-package-inner { display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; }
+.full-package-body { display:flex; flex-direction:column; gap:3px; }
+.full-package-name { font-family:var(--font-d); font-size:15px; font-weight:800; color:var(--text); }
+.full-package-desc { font-family:var(--font-ui); font-size:12px; color:var(--text3); }
+.full-package-check {
+  width:24px; height:24px; border-radius:6px; border:1.5px solid var(--border-mid);
+  flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; color:transparent; transition:all .2s;
+  position:relative;
+}
+.full-package-card.selected .full-package-check {
+  background:var(--s5-full); border-color:var(--s5-full); color:#fff;
+}
+.full-package-card.selected .full-package-check::after { content:'✓'; }
+
+/* Asset nudge */
+.asset-nudge { font-family:var(--font-s); font-style:italic; font-size:13px; color:var(--text3); padding:6px 0; animation:fadeIn .3s ease; }
+
+/* Also keep old asset-list classes for compatibility */
+/* .asset-list-* removed — Step 0 now uses .asset-card grid */
+
+/* ── Buttons ────────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-d); font-size:15px; font-weight:700; letter-spacing:-0.01em;
+  padding:14px 24px; min-height:50px; border-radius:var(--rsm); border:none;
+  background:var(--cta-bg); color:var(--cta-tx); cursor:pointer;
+  width:100%; margin-top:10px; transition:opacity .15s,transform .15s;
+}
+.btn-primary:hover   { opacity:.88; transform:translateY(-1px); }
+.btn-primary:active  { transform:scale(.98); opacity:1; }
+.btn-primary:disabled { opacity:.35; cursor:not-allowed; transform:none; }
+.btn-secondary {
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-ui); font-size:13px; font-weight:500;
+  padding:10px 20px; min-height:42px; border-radius:var(--rsm);
+  border:0.5px solid var(--border-mid); background:var(--card); color:var(--text2);
+  cursor:pointer; transition:all .15s;
+}
+.btn-secondary:hover { border-color:var(--border-str); color:var(--text); }
+.btn-ghost {
+  font-family:var(--font-ui); font-size:12px; padding:7px 14px;
+  border:0.5px solid var(--border); border-radius:var(--rxs);
+  background:transparent; color:var(--text3); cursor:pointer; transition:all .15s;
+}
+.btn-ghost:hover { border-color:var(--border-str); color:var(--text); }
+
+/* ── Form ───────────────────────────────────────────────────────────────────── */
+.field-group { margin-bottom:20px; }
+.field-label { display:block; font-family:var(--font-ui); font-size:13px; font-weight:500; color:var(--text2); margin-bottom:8px; line-height:1.4; }
+.textarea {
+  width:100%; background:var(--card-inset); border:0.5px solid var(--border);
+  border-radius:var(--rsm); color:var(--text); font-family:var(--font-ui);
+  font-size:14px; line-height:1.65; padding:12px 14px; resize:vertical; outline:none;
+  transition:border-color .2s, background .2s;
+}
+.textarea:focus { border-color:var(--border-str); background:var(--card); }
+.textarea::placeholder { color:var(--text4); }
+.input-text {
+  width:100%; background:var(--card-inset); border:0.5px solid var(--border);
+  border-radius:var(--rsm); color:var(--text); font-family:var(--font-ui);
+  font-size:14px; padding:11px 14px; min-height:44px; outline:none; transition:border-color .2s;
+}
+.input-text:focus { border-color:var(--border-str); background:var(--card); }
+.hint-text { font-family:var(--font-ui); font-size:12px; color:var(--text4); line-height:1.55; margin-top:6px; }
+
+/* ── Toggle ─────────────────────────────────────────────────────────────────── */
+.toggle-row { display:flex; gap:6px; margin-bottom:14px; }
+.toggle-btn {
+  font-family:var(--font-ui); font-size:12px; font-weight:500;
+  padding:7px 16px; min-height:36px; border-radius:20px;
+  border:0.5px solid var(--border-mid); background:var(--card-raised); color:var(--text3);
+  cursor:pointer; transition:all .15s;
+}
+.toggle-btn.active { background:var(--text); color:var(--bg); border-color:var(--text); }
+
+/* ── Privacy badge ──────────────────────────────────────────────────────────── */
+.privacy-badge {
+  display:inline-flex; align-items:center; gap:6px; font-family:var(--font-ui);
+  font-size:12px; color:var(--text3); background:var(--card-raised);
+  border:0.5px solid var(--border); border-radius:20px; padding:5px 12px; margin-bottom:20px;
+}
+
+/* ── Upload ─────────────────────────────────────────────────────────────────── */
+.upload-zone {
+  display:block; border:1.5px dashed var(--border-mid); border-radius:var(--radius);
+  padding:28px 20px; text-align:center; cursor:pointer;
+  background:var(--card-inset); transition:all .2s;
+}
+.upload-zone:hover,.upload-zone.drag-over { border-color:var(--border-str); background:var(--card-raised); }
+.upload-icon  { font-size:22px; display:block; margin-bottom:6px; }
+.upload-label { display:block; font-family:var(--font-ui); font-size:14px; font-weight:500; color:var(--text2); }
+.upload-hint  { display:block; font-family:var(--font-ui); font-size:12px; color:var(--text4); margin-top:4px; }
+.upload-status { font-family:var(--font-ui); font-size:13px; color:var(--ok); margin-top:8px; padding:8px 12px; background:var(--ok-bg); border:0.5px solid var(--ok-bd); border-radius:var(--rxs); }
+
+/* ── Loading ────────────────────────────────────────────────────────────────── */
+.loading { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; background:var(--card-raised); border:0.5px solid var(--border); border-radius:var(--rsm); margin-top:12px; animation:fadeIn .2s ease; }
+.spinner { width:16px; height:16px; border-radius:50%; border:2px solid var(--border-mid); border-top-color:var(--text2); animation:spin .8s linear infinite; flex-shrink:0; margin-top:2px; }
+.loading-content  { flex:1; min-width:0; }
+.loading-stage    { font-family:var(--font-ui); font-size:13px; color:var(--text2); font-weight:500; margin-bottom:2px; transition:opacity .3s; }
+.loading-substage { font-family:var(--font-ui); font-size:12px; color:var(--text4); line-height:1.4; }
+.loading-stages-track { display:flex; gap:4px; margin-top:8px; }
+.stage-dot { width:6px; height:6px; border-radius:50%; background:var(--border-mid); transition:background .3s; }
+.stage-dot.done   { background:var(--ok); }
+.stage-dot.active { background:var(--text2); animation:pulse 1.5s infinite; }
+
+/* ── Confirm card ───────────────────────────────────────────────────────────── */
+.confirm-card { background:var(--card-raised); border:0.5px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin-top:16px; }
+.confirm-card-label { font-family:var(--font-ui); font-size:11px; font-weight:500; color:var(--ok); margin-bottom:12px; display:block; }
+.confirm-fields { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px; }
+.confirm-field { display:flex; flex-direction:column; gap:4px; }
+.confirm-field-label { font-family:var(--font-ui); font-size:11px; font-weight:500; color:var(--text3); letter-spacing:0.04em; }
+.confirm-input { background:var(--card); border:0.5px solid var(--border-mid); border-radius:var(--rsm); color:var(--text); font-family:var(--font-d); font-size:14px; font-weight:700; padding:9px 12px; outline:none; transition:border-color .15s; width:100%; }
+.confirm-input:focus { border-color:var(--border-str); }
+.confirm-input-wrap { position:relative; }
+.confirm-edit-hint { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-family:var(--font-ui); font-size:10px; color:var(--text4); pointer-events:none; }
+.confirm-input:focus + .confirm-edit-hint { display:none; }
+
+/* ── Flow stages ────────────────────────────────────────────────────────────── */
+.flow-stages { display:flex; align-items:center; gap:0; margin-bottom:18px; flex-wrap:wrap; gap:4px; }
+.flow-stage { display:flex; align-items:center; gap:5px; padding:5px 11px; border-radius:20px; background:var(--card-raised); border:0.5px solid var(--border); }
+.flow-stage.active { background:var(--s2-bg); border-color:var(--s2-bd); }
+.flow-stage-num { font-family:var(--font-d); font-size:11px; font-weight:700; color:var(--text4); }
+.flow-stage.active .flow-stage-num { color:var(--s2-sub); }
+.flow-stage-label { font-family:var(--font-ui); font-size:11px; color:var(--text3); }
+.flow-stage.active .flow-stage-label { color:var(--s2-tx); }
+.flow-stage-line { flex:1; height:0.5px; background:var(--border); min-width:10px; }
+
+/* ── Pain points ────────────────────────────────────────────────────────────── */
+.pain-counter { font-family:var(--font-ui); font-size:12px; color:var(--text3); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.pain-counter-pips { display:flex; gap:4px; }
+.pain-pip { width:8px; height:8px; border-radius:50%; border:1.5px solid var(--border-mid); transition:all .2s; }
+.pain-pip.filled { background:var(--s2-full); border-color:var(--s2-full); }
+.pain-list { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+.pain-item { display:flex; align-items:flex-start; gap:12px; padding:13px 16px; border:0.5px solid var(--border); border-radius:var(--rsm); cursor:pointer; background:var(--card); transition:all .2s; position:relative; }
+.pain-item:hover { border-color:var(--border-mid); background:var(--card-raised); transform:translateY(-1px); }
+.pain-item.selected { border-color:var(--s2-full); background:var(--s2-bg); border-left:3px solid var(--s2-full); }
+.pain-item.dimmed { opacity:.3; cursor:not-allowed; pointer-events:none; }
+.pain-item input[type=checkbox] { display:none; }
+.pain-item-text { font-family:var(--font-ui); font-size:13px; color:var(--text); line-height:1.6; flex:1; }
+.pain-item.selected .pain-item-text { color:var(--s2-tx); font-weight:500; }
+.pain-check { font-size:13px; color:var(--s2-full); font-weight:700; flex-shrink:0; margin-top:1px; }
+.context-trigger { font-family:var(--font-ui); font-size:12px; font-weight:500; color:var(--text3); background:none; border:none; cursor:pointer; padding:0; margin-bottom:10px; text-decoration:underline; text-underline-offset:2px; transition:color .15s; }
+.context-trigger:hover { color:var(--text); }
+.context-expanded { padding-top:8px; }
+
+/* ── Briefing accordion ─────────────────────────────────────────────────────── */
+.briefing-accordion { margin-top:14px; border:0.5px solid var(--border); border-radius:var(--rsm); overflow:hidden; }
+/* Now div-based (not details) — supports show/hide via JS */
+.briefing-header {
+  padding:11px 16px; font-family:var(--font-ui); font-size:13px; font-weight:500;
+  color:var(--text3); cursor:pointer; background:var(--card-raised);
+  user-select:none; transition:color .15s;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.briefing-header:hover { color:var(--text); }
+.briefing-arrow { font-size:12px; color:var(--text4); }
+.briefing-body { padding:14px 16px; font-family:var(--font-ui); font-size:13px; color:var(--text2); line-height:1.7; border-top:0.5px solid var(--border); }
+.briefing-body strong { font-weight:600; color:var(--text); }
+
+/* ── Narrative reveal — Step 3 ──────────────────────────────────────────────── */
+.narrative-reveal {
+  background:var(--s3-bg); border:0.5px solid var(--s3-bd); border-left:4px solid var(--s3-full);
+  border-radius:var(--radius); padding:22px 24px; margin-bottom:24px; animation:fadeUp .4s ease forwards;
+}
+.narrative-eyebrow { font-family:var(--font-ui); font-size:9px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--s3-sub); margin-bottom:12px; }
+/* Narrative thread is the most important line in the product — make it feel like it */
+.narrative-thread {
+  font-family:var(--font-s); font-style:italic; font-weight:300;
+  font-size:20px; color:var(--s3-tx); line-height:1.6;
+  /* Slightly larger than before — this is the argument */
+}
+@media (max-width:720px) {
+  .narrative-thread { font-size:17px; }
+}
+
+/* ── Fit table ──────────────────────────────────────────────────────────────── */
+.fit-table-label { font-family:var(--font-ui); font-size:9px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--text4); margin-bottom:8px; }
+.fit-table { border:0.5px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:14px; }
+.fit-table-row { display:grid; grid-template-columns:1fr 1fr; }
+.fit-table-row:not(:last-child) { border-bottom:0.5px solid var(--border); }
+.fit-table-header { background:var(--card-raised); }
+.fit-col { padding:10px 14px; font-family:var(--font-ui); font-size:12px; line-height:1.5; }
+.fit-col-need { color:var(--text3); border-right:0.5px solid var(--border); }
+.fit-col-bring { color:var(--text); display:flex; align-items:flex-start; gap:8px; }
+.fit-table-header .fit-col { font-size:10px; font-weight:500; color:var(--text4); }
+.fit-signal { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+.fit-match { background:var(--ok); }
+.fit-gap   { background:var(--error); }
+.fit-gap-text { color:var(--text3); }
+.fit-evidence { font-family:var(--font-ui); font-size:12px; color:var(--text3); line-height:1.6; padding:10px 14px; background:var(--card-raised); border:0.5px solid var(--border); border-radius:var(--rsm); margin-bottom:12px; }
+.fit-advice { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:14px; color:var(--text2); line-height:1.65; border-left:4px solid var(--s3-full); padding:8px 14px; margin-bottom:16px; }
+
+/* ── Angle callout ──────────────────────────────────────────────────────────── */
+.angle-callout { border-left:4px solid var(--border-mid); padding:10px 14px; margin-bottom:20px; animation:fadeUp .3s ease forwards; }
+.angle-eyebrow { font-family:var(--font-ui); font-size:9px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--text4); margin-bottom:5px; }
+.angle-text { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:14px; color:var(--text2); line-height:1.6; }
+
+/* ── Gap analysis ───────────────────────────────────────────────────────────── */
+.gap-analysis { background:var(--card-raised); border:0.5px solid var(--border); border-radius:var(--rsm); padding:18px 20px; margin-bottom:18px; font-family:var(--font-ui); font-size:13px; color:var(--text2); line-height:1.7; min-height:80px; }
+.gap-section { margin-bottom:14px; }
+.gap-label { font-size:9px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--text4); display:block; margin-bottom:4px; font-family:var(--font-ui); }
+.gap-content { color:var(--text2); line-height:1.65; }
+.gap-analysis ul { padding-left:16px; margin:4px 0; }
+.gap-analysis li { margin-bottom:3px; }
+.gap-analysis strong { font-weight:600; color:var(--text); }
+.placeholder-text { color:var(--text4); font-style:italic; font-size:13px; }
+
+/* ── Bullet diagnosis — Step 3.5 ───────────────────────────────────────────── */
+.bullet-diag-eyebrow { font-family:var(--font-ui); font-size:9px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--s35-sub); margin-bottom:12px; }
+.bullet-diag-card { background:var(--card); border:0.5px solid var(--s35-bd); border-left:4px solid var(--s35-full); border-radius:var(--radius); padding:16px 18px; margin-bottom:10px; animation:fadeUp .3s ease forwards; }
+.bullet-diag-role { font-family:var(--font-ui); font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--s35-sub); margin-bottom:8px; }
+.bullet-diag-text { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:14px; color:var(--s35-tx); line-height:1.65; margin-bottom:8px; }
+.bullet-diag-relevance { font-family:var(--font-ui); font-size:12px; color:var(--s35-sub); line-height:1.5; margin-bottom:12px; }
+.bullet-diag-questions { padding-top:12px; border-top:0.5px solid var(--s35-bd); }
+.bullet-diag-questions-label { font-family:var(--font-ui); font-size:9px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--s35-sub); margin-bottom:10px; }
+.bullet-question { margin-bottom:12px; }
+.bullet-question-text { display:block; font-family:var(--font-ui); font-size:13px; color:var(--s35-tx); line-height:1.6; margin-bottom:6px; font-weight:500; }
+.bullet-question-answer { background:var(--s35-bg); border:0.5px solid var(--s35-bd); border-radius:var(--rsm); color:var(--s35-tx); font-family:var(--font-ui); font-size:13px; line-height:1.6; padding:10px 12px; width:100%; resize:vertical; outline:none; transition:border-color .15s; }
+.bullet-question-answer:focus { border-color:var(--s35-full); }
+.bullet-question-answer::placeholder { color:var(--s35-sub); opacity:.6; }
+
+/* ── Routing card ───────────────────────────────────────────────────────────── */
+.routing-card { background:var(--card-raised); border:0.5px solid var(--border); border-radius:var(--radius); padding:18px 20px; margin-bottom:14px; animation:fadeUp .3s ease forwards; }
+.routing-card-header { margin-bottom:14px; }
+.routing-card-label { font-family:var(--font-d); font-size:14px; font-weight:700; color:var(--text); display:block; margin-bottom:4px; }
+.routing-card-sub { font-family:var(--font-ui); font-size:12px; color:var(--text3); }
+.routing-section { margin-bottom:14px; }
+.routing-section-title { font-family:var(--font-ui); font-size:10px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--text4); margin-bottom:8px; }
+.routing-options { display:flex; flex-direction:column; gap:6px; }
+.routing-option { padding:12px 14px; border:0.5px solid var(--border); border-radius:var(--rsm); cursor:pointer; background:var(--card); transition:all .2s; }
+.routing-option:hover { border-color:var(--border-mid); background:var(--card-raised); }
+.routing-option.selected { border-color:var(--s4-full); background:var(--s4-bg); border-left:3px solid var(--s4-full); }
+.routing-option-label { font-family:var(--font-d); font-size:13px; font-weight:700; color:var(--text); margin-bottom:3px; }
+.routing-option.selected .routing-option-label { color:var(--s4-tx); }
+.routing-option-desc { font-family:var(--font-ui); font-size:12px; color:var(--text3); line-height:1.5; }
+
+/* ── Toast ──────────────────────────────────────────────────────────────────── */
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:999; background:var(--text); color:var(--bg); font-family:var(--font-ui); font-size:13px; font-weight:500; padding:10px 20px; border-radius:24px; animation:slideDown .3s ease; white-space:nowrap; pointer-events:none; }
+
+/* ── Surface notice / fallback ──────────────────────────────────────────────── */
+.surface-notice { background:var(--warn-bg); border:0.5px solid var(--warn-bd); border-left:4px solid var(--warn); border-radius:var(--rsm); padding:12px 14px; margin-bottom:14px; font-family:var(--font-ui); font-size:13px; color:var(--warn-tx); line-height:1.55; }
+.fallback { background:var(--warn-bg); border:0.5px solid var(--warn-bd); border-radius:var(--rsm); padding:14px 16px; margin-top:12px; font-family:var(--font-ui); font-size:13px; color:var(--warn-tx); line-height:1.6; }
+
+/* ── Tabs — Step 5 ──────────────────────────────────────────────────────────── */
+.tabs-row { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:16px; }
+.tab-btn { font-family:var(--font-d); font-size:12px; font-weight:700; padding:8px 16px; min-height:36px; border-radius:20px; border:0.5px solid var(--border); background:var(--card-raised); color:var(--text3); cursor:pointer; transition:all .2s; }
+.tab-btn:hover { border-color:var(--border-mid); color:var(--text); }
+.tab-btn.active { background:var(--text); color:var(--bg); border-color:var(--text); }
+.tab-panel { animation:fadeIn .2s ease; }
+.tab-panel.hidden { display:none; }
+
+/* ── Asset output ───────────────────────────────────────────────────────────── */
+.asset-output { background:var(--card); border:0.5px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:14px; }
+.asset-output-text { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:15px; color:var(--text); line-height:1.8; white-space:pre-wrap; }
+.asset-output-plain { font-family:var(--font-ui); font-size:14px; color:var(--text); line-height:1.75; white-space:pre-wrap; }
+.eval-row { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.eval-badge { display:flex; align-items:center; gap:5px; font-family:var(--font-ui); font-size:11px; font-weight:500; padding:4px 10px; border-radius:12px; border:0.5px solid var(--border); background:var(--card-raised); color:var(--text3); }
+
+/* ── Eval block — scores + verdict + suggestion ──────────────────────────────── */
+.eval-block { margin-top:18px; padding:14px 16px; background:var(--card-raised); border:0.5px solid var(--border); border-radius:var(--rsm); }
+.eval-scores { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+.eval-pill { display:inline-flex; align-items:center; font-family:var(--font-ui); font-size:11px; font-weight:600; padding:4px 10px; border-radius:12px; letter-spacing:0.02em; }
+.eval-pill.good { background:var(--ok-bg); color:var(--ok); border:0.5px solid var(--ok-bd); }
+.eval-pill.mid  { background:var(--warn-bg); color:var(--warn); border:0.5px solid var(--warn-bd); }
+.eval-pill.low  { background:var(--err-bg); color:var(--error); border:0.5px solid var(--err-bd); }
+.eval-verdict   { font-family:var(--font-ui); font-size:12px; color:var(--text3); line-height:1.5; margin-bottom:4px; }
+.eval-suggestion { font-family:var(--font-ui); font-size:12px; color:var(--text3); line-height:1.55; font-style:italic; }
+
+/* ── Cover letter — paragraphs with labels ───────────────────────────────────── */
+.cl-header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:10px; border-bottom:0.5px solid var(--border); }
+.cl-header-label { font-family:var(--font-ui); font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--text4); }
+.cl-word-count { font-family:var(--font-ui); font-size:11px; font-weight:500; }
+.para-block { margin-bottom:18px; }
+.para-label-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.para-label-btn { font-family:var(--font-ui); font-size:9px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:3px 8px; border-radius:4px; border:0.5px solid var(--border-mid); background:var(--card-raised); color:var(--text4); cursor:pointer; transition:all .15s; }
+.para-label-btn:hover { background:var(--text); color:var(--bg); border-color:var(--text); }
+.para-label-btn.active { background:var(--s4-full); color:#fff; border-color:var(--s4-full); }
+.para-label-note { font-family:var(--font-ui); font-size:11px; color:var(--text4); }
+.para-text { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:15px; color:var(--text); line-height:1.85; }
+
+/* ── Resume bullets ──────────────────────────────────────────────────────────── */
+.bullets-summary { font-family:var(--font-ui); font-size:12px; color:var(--text3); margin-bottom:14px; font-style:italic; }
+.bullet-card { background:var(--card); border:0.5px solid var(--border); border-radius:var(--rsm); padding:16px 18px; margin-bottom:10px; }
+.bullet-rewritten { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:14.5px; color:var(--text); line-height:1.75; margin-bottom:8px; }
+.bullet-argues { font-family:var(--font-ui); font-size:12px; color:var(--s3-sub); margin-bottom:10px; line-height:1.5; }
+.bullet-original-row { display:flex; gap:8px; align-items:flex-start; padding-top:8px; border-top:0.5px solid var(--border); }
+.bullet-original-label { font-family:var(--font-ui); font-size:10px; font-weight:500; color:var(--text4); letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap; padding-top:2px; flex-shrink:0; }
+.bullet-original-text { font-family:var(--font-ui); font-size:12px; color:var(--text4); line-height:1.55; }
+
+/* ── Interview prep — section cards ──────────────────────────────────────────── */
+.interview-section { margin-bottom:20px; background:var(--card); border:0.5px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.interview-section-title { font-family:var(--font-d); font-size:13px; font-weight:800; color:var(--text); letter-spacing:-0.01em; padding:14px 18px; background:var(--card-raised); border-bottom:0.5px solid var(--border); text-transform:uppercase; letter-spacing:0.06em; font-size:10px; }
+.interview-section-body { padding:14px 18px; display:flex; flex-direction:column; gap:10px; }
+.interview-qa { background:var(--card-inset); border:0.5px solid var(--border); border-radius:var(--rsm); padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
+.interview-qa-hard { border-left:3px solid var(--error); }
+.interview-q { display:flex; gap:10px; align-items:flex-start; }
+.interview-q-label { font-family:var(--font-d); font-size:10px; font-weight:800; width:20px; height:20px; border-radius:50%; background:var(--s2-full); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+.interview-q-label.hard { background:var(--error); }
+.interview-q-label.ask  { background:var(--s3-full); }
+.interview-q span:last-child { font-family:var(--font-ui); font-size:13.5px; font-weight:500; color:var(--text); line-height:1.55; }
+.interview-field { display:flex; flex-direction:column; gap:3px; padding:8px 10px; background:var(--card); border-radius:var(--rxs); border:0.5px solid var(--border); }
+.interview-field-evidence { border-left:3px solid var(--s3-full); }
+.interview-field-avoid    { border-left:3px solid var(--error); }
+.interview-field-label { font-family:var(--font-ui); font-size:9px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text4); }
+.interview-field-value { font-family:var(--font-ui); font-size:13px; color:var(--text2); line-height:1.6; }
+.interview-para  { font-family:var(--font-ui); font-size:13.5px; color:var(--text2); line-height:1.7; }
+.interview-bullet { font-family:var(--font-ui); font-size:13px; color:var(--text2); line-height:1.6; padding-left:14px; position:relative; }
+.interview-bullet::before { content:'·'; position:absolute; left:0; color:var(--text4); font-weight:700; }
+.interview-quote { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:14px; color:var(--text2); line-height:1.7; border-left:3px solid var(--border-mid); padding:6px 12px; margin:4px 0; }
+
+/* ── Brief card — cover letter decision record ───────────────────────────────── */
+.brief-card { background:var(--card-raised); border:0.5px solid var(--border); border-radius:var(--rsm); margin-bottom:14px; overflow:hidden; }
+.brief-card-header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--card-raised); border-bottom:0.5px solid var(--border); }
+.brief-card-title { font-family:var(--font-ui); font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text4); }
+.brief-card-toggle { font-family:var(--font-ui); font-size:12px; background:none; border:none; cursor:pointer; color:var(--text4); padding:2px 6px; border-radius:4px; transition:color .15s; }
+.brief-card-toggle:hover { color:var(--text); }
+.brief-card-body { padding:10px 14px; display:flex; flex-direction:column; gap:6px; }
+.brief-card-row { display:flex; gap:8px; align-items:flex-start; font-family:var(--font-ui); font-size:12px; line-height:1.5; }
+.brief-card-icon { color:var(--text4); flex-shrink:0; width:14px; text-align:center; margin-top:1px; }
+.brief-card-label { color:var(--text4); flex-shrink:0; min-width:100px; }
+.brief-card-value { color:var(--text2); flex:1; }
+.brief-card-footer { font-family:var(--font-ui); font-size:11px; color:var(--text4); font-style:italic; margin-top:6px; padding-top:8px; border-top:0.5px solid var(--border); }
+
+/* ── Output doc + refine section ────────────────────────────────────────────── */
+.output-doc { margin-bottom:14px; }
+.output-brief { font-family:var(--font-ui); font-size:12px; color:var(--text4); margin-bottom:14px; font-style:italic; }
+.output-brief em { color:var(--text3); }
+.copy-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.refine-section { margin-top:18px; padding-top:16px; border-top:0.5px solid var(--border); }
+.refine-label { font-family:var(--font-ui); font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text4); margin-bottom:8px; }
+.chip-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+.chip { font-family:var(--font-ui); font-size:11px; font-weight:500; padding:5px 12px; border:0.5px solid var(--border-mid); border-radius:20px; background:var(--card-raised); color:var(--text3); cursor:pointer; transition:all .15s; }
+.chip:hover { border-color:var(--border-str); color:var(--text); background:var(--card); }
+.diagnosis-display { background:var(--card-raised); border:0.5px solid var(--border); border-radius:var(--rsm); padding:12px 14px; margin-bottom:10px; }
+.diag-loading { font-family:var(--font-ui); font-size:12px; color:var(--text4); font-style:italic; }
+.diag-block { display:flex; flex-direction:column; gap:6px; }
+.diag-row { display:flex; gap:8px; align-items:flex-start; font-family:var(--font-ui); font-size:12px; line-height:1.5; }
+.diag-icon { color:var(--text4); flex-shrink:0; width:14px; text-align:center; }
+.diag-label { color:var(--text4); flex-shrink:0; min-width:60px; }
+.diag-value { color:var(--text2); flex:1; }
+.diag-fix-row .diag-label { color:var(--ok); }
+.diag-preserve-row .diag-label { color:var(--s2-full); }
+.refinement-note { font-family:var(--font-ui); font-size:12px; color:var(--ok); margin-bottom:8px; }
+.output-doc.refining { opacity:0.4; pointer-events:none; transition:opacity .3s; }
+
+/* ── Rethink section ─────────────────────────────────────────────────────────── */
+.rethink-section { margin-top:16px; padding-top:14px; border-top:0.5px solid var(--border); }
+.rethink-label { font-family:var(--font-ui); font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text4); display:block; margin-bottom:6px; }
+.rethink-options { display:flex; flex-direction:column; gap:6px; }
+
+/* ── Form answers ────────────────────────────────────────────────────────────── */
+.form-answers-list { display:flex; flex-direction:column; gap:12px; }
+.form-answer-card { background:var(--card); border:0.5px solid var(--border); border-radius:var(--rsm); padding:14px 16px; }
+/* Form answers — answer is the hero, question is the label above it */
+.form-answer-question {
+  font-family:var(--font-ui); font-size:11px; font-weight:500;
+  color:var(--text4); line-height:1.5; margin-bottom:8px;
+  /* Sentence case, not all-caps — questions rendered as muted labels */
+}
+.form-answer-body {
+  font-family:var(--font-ui); font-size:14px; color:var(--text); line-height:1.75;
+  /* The answer: prominent, readable, copy-ready */
+}
+/* Keep legacy classes for backwards compatibility */
+.form-answer-field { font-family:var(--font-ui); font-size:11px; font-weight:600; color:var(--text4); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:6px; }
+.form-answer-text  { font-family:var(--font-ui); font-size:13.5px; color:var(--text); line-height:1.7; }
+.copy-btn { font-family:var(--font-ui); font-size:12px; font-weight:500; padding:7px 14px; border:0.5px solid var(--border-mid); border-radius:var(--rsm); background:var(--card-raised); color:var(--text3); cursor:pointer; transition:all .15s; }
+.copy-btn:hover { border-color:var(--border-str); color:var(--text); }
+.copy-btn.copied { background:var(--ok-bg); color:var(--ok); border-color:var(--ok-bd); }
+.download-btn { font-family:var(--font-d); font-size:13px; font-weight:700; padding:9px 18px; border:none; border-radius:var(--rsm); background:var(--cta-bg); color:var(--cta-tx); cursor:pointer; transition:opacity .15s; }
+.download-btn:hover { opacity:.88; }
+.refine-btn { font-family:var(--font-ui); font-size:11px; font-weight:500; padding:5px 10px; border:0.5px solid var(--border); border-radius:var(--rxs); background:var(--card-raised); color:var(--text3); cursor:pointer; transition:all .15s; }
+.refine-btn:hover { border-color:var(--border-mid); color:var(--text); }
+.para-label-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+.para-refine-btn { margin-left:auto; }
+
+/* ── Momentum ───────────────────────────────────────────────────────────────── */
+.momentum-reveal { background:var(--s5-bg); border:0.5px solid var(--s5-bd); border-left:4px solid var(--s5-full); border-radius:var(--radius); padding:14px 18px; margin-bottom:16px; animation:fadeUp .4s ease forwards; }
+#momentumSingleton { position:fixed; top:16px; left:calc(var(--sidebar-w) + 20px); right:20px; z-index:900; max-width:560px; background:var(--s5-bg); border:0.5px solid var(--s5-bd); border-radius:var(--radius); padding:12px 18px; display:none; animation:slideDown .3s ease forwards; }
+#momentumSingleton.visible { display:block; }
+.momentum-label { font-family:var(--font-ui); font-size:9px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--s5-sub); display:block; margin-bottom:3px; }
+.momentum-text { font-family:var(--font-ui); font-size:13px; color:var(--s5-tx); line-height:1.5; margin:0; }
+.momentum-thread { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:14px; color:var(--s5-tx); line-height:1.6; margin-top:4px; }
+
+/* ── End moment ─────────────────────────────────────────────────────────────── */
+.end-moment { text-align:center; padding:32px 0; animation:fadeUp .4s ease forwards; }
+.end-moment-icon { font-size:28px; display:block; margin-bottom:10px; }
+.end-moment-title { font-family:var(--font-d); font-size:22px; font-weight:800; color:var(--text); margin-bottom:8px; letter-spacing:-0.02em; }
+.end-moment-sub { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:14px; color:var(--text3); line-height:1.65; max-width:480px; margin:0 auto; }
+.end-moment-actions { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+
+/* ── Rating ─────────────────────────────────────────────────────────────────── */
+.rating-section { margin-top:24px; text-align:left; }
+.rating-label { font-family:var(--font-d); font-size:16px; font-weight:700; color:var(--text); margin-bottom:4px; }
+.asset-rating-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:0.5px solid var(--border); }
+.asset-rating-row:last-child { border-bottom:none; }
+.asset-rating-label { font-family:var(--font-ui); font-size:13px; color:var(--text2); }
+.star-rating { display:flex; gap:4px; }
+.star-btn { background:none; border:none; cursor:pointer; font-size:20px; color:var(--border-mid); padding:2px; transition:color .1s,transform .1s; }
+.star-btn:hover,.star-btn.star-filled { color:var(--s2-full); transform:scale(1.15); }
+.rating-paths { margin-top:20px; animation:fadeUp .3s ease forwards; }
+.rating-thankyou { font-family:var(--font-s); font-style:italic; font-weight:300; font-size:14px; color:var(--text3); margin-bottom:16px; }
+.reset-link { font-family:var(--font-ui); font-size:12px; color:var(--text4); background:none; border:none; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+
+/* ── Generate section ───────────────────────────────────────────────────────── */
+#generateSection { margin-top:16px; }
+
+/* ── Mobile ─────────────────────────────────────────────────────────────────── */
+@media (max-width:720px) {
+  :root { --sidebar-w:0px; }
+  .app-shell { flex-direction:column; }
+
+  /* Sidebar becomes a compact horizontal top strip */
+  .sidebar-rail {
+    width:100%; height:auto; position:sticky; top:0;
+    flex-direction:row; padding:0;
+    border-right:none; border-bottom:0.5px solid var(--border);
+    overflow-x:auto; overflow-y:hidden;
+    scrollbar-width:none; z-index:200;
+  }
+  .sidebar-rail::-webkit-scrollbar { display:none; }
+  .sidebar-brand { display:none; }
+  .sidebar-steps { flex-direction:row; flex:1; overflow:visible; }
+
+  .sidebar-step {
+    flex:0 0 auto; min-width:64px; flex-direction:column;
+    justify-content:center; align-items:center;
+    padding:8px 6px; min-height:52px;
+    border-left:none; border-bottom:3px solid transparent;
+  }
+  .sidebar-step.active {
+    border-bottom-color:rgba(255,255,255,0.9);
+    border-left:none;
+  }
+  .sidebar-step.active::after { display:none; }
+  .srail-num  { font-size:8px; text-align:center; margin-bottom:2px; }
+  .srail-name { font-size:10px; text-align:center; white-space:nowrap; line-height:1.2; }
+  .srail-check { display:none; }
+
+  /* Dark mode button — move to after sidebar steps, compact */
+  .dm-btn {
+    margin:6px 8px; padding:4px 10px; font-size:9px;
+    align-self:center; flex-shrink:0;
+    background:var(--card); color:var(--text2);
+    border:1px solid var(--border-str);
+  }
+
+  /* Main content — full width, tighter padding */
+  .main { padding:16px 14px 80px; max-width:100%; }
+
+  /* Hero — smaller on mobile */
+  .hero { padding:24px 0 16px; }
+  .hero-title { font-size:28px; }
+
+  /* Step cards */
+  .step { padding:20px 16px; }
+
+  /* Asset grid — 2 columns on mobile */
+  .asset-grid { grid-template-columns:repeat(2,1fr); gap:6px; }
+  /* Row 2 (2 cards) stays 2 columns on mobile — matches row 1's 2-col */
+  .asset-grid-row2 { grid-template-columns:repeat(2,1fr); gap:6px; }
+
+  /* Confirm fields — single column */
+  .confirm-fields { grid-template-columns:1fr; gap:10px; }
+
+  /* Fit table — stack columns on very small screens */
+  .fit-table-row { grid-template-columns:1fr; }
+  .fit-col-need { border-right:none; border-bottom:0.5px solid var(--border); }
+  .fit-table-header { display:none; } /* hide header on stacked layout */
+
+  /* Tabs — scrollable */
+  .tabs-row { flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+  .tabs-row::-webkit-scrollbar { display:none; }
+  .tab-btn { flex-shrink:0; }
+
+  /* Routing options — full width */
+  .routing-option { padding:10px 12px; }
+
+  /* Step 5 output */
+  .end-moment { padding:20px 0; }
+
+  /* Toast — full width on mobile */
+  .toast { left:12px; right:12px; transform:none; text-align:center; white-space:normal; }
+
+  /* Momentum — full width */
+  #momentumSingleton { left:10px; right:10px; }
+}
+
+@media (max-width:420px) {
+  .srail-name { font-size:9px; }
+  .srail-num  { font-size:7px; }
+  .sidebar-step { min-width:52px; padding:6px 4px; }
+  .hero-title { font-size:24px; }
+  .step-title { font-size:20px; }
+  .asset-grid { grid-template-columns:1fr 1fr; gap:5px; }
+  .btn-primary { font-size:14px; padding:12px 18px; }
+}
+
+/* ── Utility ────────────────────────────────────────────────────────────────── */
+.hidden { display:none !important; }
+.fade-in { animation:fadeUp .3s ease forwards; }
+
+/* ── Elevator navigation ─────────────────────────────────────────────────────── */
+.elevator-nav {
+  position:fixed; left:calc(var(--sidebar-w) + 12px); top:50vh;
+  transform:translateY(-50%); z-index:100;
+  display:flex; flex-direction:column; gap:4px;
+}
+.elevator-btn {
+  width:32px; height:32px; border-radius:8px;
+  background:var(--card); border:1px solid var(--border-str);
+  color:var(--text2); font-size:16px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .15s; box-shadow:0 1px 4px rgba(0,0,0,.08);
+  line-height:1;
+}
+.elevator-btn:hover:not(:disabled) {
+  background:var(--text); color:var(--bg);
+  border-color:var(--text);
+}
+.elevator-btn:disabled { opacity:0.3; cursor:not-allowed; }
+.dark .elevator-btn { background:var(--card-raised); }
+/* Hide elevator on mobile — sidebar handles navigation */
+@media (max-width:720px) { .elevator-nav { display:none; } }
+
+/* ── Sidebar done-step hover state ──────────────────────────────────────────── */
+.sidebar-step.done.hovering {
+  opacity:0.9;
+  filter:brightness(1.08);
+}
+.sidebar-step.done { cursor:pointer; }
+
+/* ── Sidebar one-time education tooltip ─────────────────────────────────────── */
+.sidebar-tooltip {
+  position:fixed; left:calc(var(--sidebar-w) + 16px); top:80px;
+  background:var(--text); color:var(--bg);
+  font-family:var(--font-ui); font-size:12px; font-weight:500;
+  padding:8px 14px; border-radius:8px; z-index:200;
+  max-width:220px; line-height:1.5;
+  box-shadow:0 4px 16px rgba(0,0,0,.15);
+  animation:fadeInSlide .3s ease;
+}
+.sidebar-tooltip::before {
+  content:''; position:absolute; left:-6px; top:50%;
+  transform:translateY(-50%);
+  border:6px solid transparent;
+  border-right-color:var(--text);
+  border-left:none;
+}
+@keyframes fadeInSlide {
+  from { opacity:0; transform:translateX(-8px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+@media (max-width:720px) { .sidebar-tooltip { display:none; } }
+
+/* ── CV extraction ATS note ──────────────────────────────────────────────────── */
+.cv-extraction-note {
+  font-family:var(--font-ui); font-size:12px; color:var(--text3);
+  line-height:1.6; padding:10px 14px;
+  background:var(--card-raised); border:0.5px solid var(--border);
+  border-left:3px solid var(--s2-full);
+  border-radius:var(--rsm); margin-top:10px;
+}
+
+/* ── Field optional label ────────────────────────────────────────────────────── */
+.field-optional {
+  font-family:var(--font-ui); font-size:11px; font-weight:400;
+  color:var(--text4); margin-left:6px;
+}
+
+
+/* ── Gap analysis — address guidance ─────────────────────────────────────────── */
+.fit-gap-handled {
+  display:block; font-family:var(--font-ui); font-size:10px;
+  color:var(--ok); margin-top:3px; font-style:italic;
+}
+/* Extracted CV preview in Step 1 */
+#cvExtractedPreview .field-label { color:var(--text4); }
+
+/* ── Button loading state ────────────────────────────────────────────────────── */
+/* Applied by UI.setButtonLoading() — visual proof that the click registered */
+.btn-loading {
+  opacity: 0.75;
+  cursor: wait !important;
+  position: relative;
+}
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  right: 14px; top: 50%;
+  transform: translateY(-50%);
+  width: 12px; height: 12px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: rgba(255,255,255,0.9);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+/* ── Step 0 proposition ─────────────────────────────────────────────────────── */
+/* Single sharp line. Confident. Not a grey box of documentation. */
+.step-proposition {
+  font-family: var(--font-s);    /* Fraunces — same as narrative thread */
+  font-style: italic;
+  font-weight: 300;
+  font-size: 15px;
+  color: var(--text3);
+  line-height: 1.5;
+  margin: 8px 0 20px;
+  /* No box. No border. Just type. */
+}
+
+/* ── Pain point evidence badges ──────────────────────────────────────────────── */
+/* Surfaces CV overlap strength — one-directional, strength only, never weakness */
+.pain-evidence-badge {
+  display: inline-block;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+  pointer-events: none; /* doesn't interfere with card click */
+}
+.pain-evidence-strong {
+  background: var(--ok-bg);
+  color: var(--ok);
+  border: 0.5px solid var(--ok-bd);
+}
+.pain-evidence-good {
+  background: var(--s3-bg);
+  color: var(--s3-sub);
+  border: 0.5px solid var(--s3-bd);
+}
+/* When card is selected, badge adapts */
+.pain-item.selected .pain-evidence-strong,
+.pain-item.selected .pain-evidence-good {
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.9);
+  border-color: rgba(255,255,255,0.2);
+}
