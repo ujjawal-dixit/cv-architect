@@ -666,31 +666,58 @@ CAREER_TRANSITIONS: [any industry or function changes, or NONE]""",
 
 # ── Company name and job title extraction — Groq 8b ───────────────────────────
 def extract_company_name(jd_text, manual_company=''):
-    """Extract company name. Falls back to manual_company if JD is thin."""
+    """Extract company name. Falls back to manual_company if JD is thin.
+    When manual entry looks like 'CompanyName RoleTitle', strips the role.
+    """
+    import re as _re
+
     if manual_company and manual_company.strip():
-        # User provided it explicitly — use it, don't re-extract
-        # But strip any role-like suffixes if the user mixed company + role
-        # e.g. "MakeMyTrip Product Management" → "MakeMyTrip"
         clean = manual_company.strip()
-        # If manual entry looks like "Company RoleName", try to isolate company
+
+        # Fast path: regex strip of common role title patterns
+        # Handles: "Lenskart Product Manager", "Google Senior Engineer", "Amazon SDE"
+        ROLE_SUFFIXES = [
+            r'\s+(?:Senior|Junior|Lead|Principal|Staff|Head|Director|VP|Chief|Associate|Assistant)\s+\w+.*$',
+            r'\s+(?:Product\s+Manager|Software\s+Engineer|Data\s+Scientist|Designer|'
+            r'Analyst|Developer|Engineer|Manager|Consultant|Specialist|Architect|'
+            r'Intern|Executive|Officer|Coordinator|Advisor|Strategist).*$',
+            r'\s+(?:SDE|SWE|PM|TPM|EM|CTO|CEO|COO|CFO|CMO|CPO|CHRO|CIO).*$',
+        ]
+        stripped = clean
+        for pattern in ROLE_SUFFIXES:
+            result = _re.sub(pattern, '', stripped, flags=_re.IGNORECASE).strip()
+            if result and len(result) >= 2 and result != stripped:
+                # Only accept if we actually removed something meaningful
+                stripped = result
+                break
+
+        # If regex stripped something, trust it — no LLM call needed
+        if stripped != clean:
+            return stripped
+
+        # If no regex match, the manual entry looks like a clean company name
+        # Only call LLM if the manual entry has 3+ words (more ambiguous)
+        if len(clean.split()) <= 2:
+            return clean
+
         try:
             result = llm(
-                f"This text may contain a company name mixed with a job title.\n"
-                f"Extract ONLY the company name. Remove any job title or role description.\n"
+                f"{LEVEL_1_LIGHT}\n\n"
+                f"Extract ONLY the company name from this text. Remove any job title.\n"
                 f"Examples: 'Google Senior PM' → 'Google', 'MakeMyTrip Product Management' → 'MakeMyTrip'\n"
-                f"If the entire text is clearly just a company name, return it as-is.\n"
-                f"Output ONLY the company name.\n\nText: {clean}\n\nCompany name:",
+                f"Output ONLY the company name.\n\nText: {clean}",
                 max_tokens=20, quality="fast", temperature=0.0
             )
             extracted = result.strip()
             return extracted if extracted and extracted.upper() != 'UNKNOWN' else clean
         except:
             return clean
+
     try:
         result = llm(
+            f"{LEVEL_1_LIGHT}\n\n"
             f"Extract the hiring company name from this job description.\n"
-            f"If a recruiting agency posted on behalf of a client, extract the CLIENT company.\n"
-            f"Output ONLY the company name or UNKNOWN.\n\nJD:\n{jd_text[:2000]}\n\nOutput:",
+            f"Output ONLY the company name or UNKNOWN.\n\nJD:\n{jd_text[:2000]}",
             max_tokens=30, quality="fast", temperature=0.1
         )
         return "" if result.strip().upper() == "UNKNOWN" else result.strip()
