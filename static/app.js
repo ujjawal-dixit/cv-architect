@@ -1089,45 +1089,45 @@ const FLOW = (() => {
 
     // Step 0 — after asset selection
     if (assets.length > 0) {
-      DOM.setText('step0Sub', `${assets.length} asset${assets.length > 1 ? 's' : ''} selected. We build only what you need.`);
+      DOM.setText('step0Sub', `${assets.length} asset${assets.length > 1 ? 's' : ''} selected.`);
     }
 
     // Step 1 — after CV parse
     if (firstName) {
-      DOM.setText('step1Sub', `${firstName}'s CV loaded. The more complete it is, the sharper we argue.`);
+      DOM.setText('step1Sub', `${firstName}'s CV loaded.`);
     }
 
     // Step 2 — after company detected
     if (company && role) {
-      DOM.setText('step2Sub', `Decoding what ${company} actually needs for ${role}.`);
+      DOM.setText('step2Sub', `Decoding what ${company} needs for ${role}.`);
     } else if (company) {
-      DOM.setText('step2Sub', `Decoding what ${company} actually needs.`);
+      DOM.setText('step2Sub', `Decoding what ${company} needs.`);
     }
 
     // Step 3 — after brief assembled
     const nt = brief.narrative_thread || '';
     if (nt) {
-      DOM.setText('step3Sub', 'Read what we found. The argument below runs through every asset.');
+      DOM.setText('step3Sub', 'Read the argument. Approve it to continue.');
     } else if (company) {
-      DOM.setText('step3Sub', `The argument for ${company} is being assembled. Approve it to continue.`);
+      DOM.setText('step3Sub', `The brief for ${company} is ready.`);
     }
 
     // Step 3.5 — bullet diagnosis context
     const gaps = brief.gaps_to_address || '';
     if (gaps && gaps.toUpperCase() !== 'NONE') {
-      DOM.setText('step35Sub', 'One question per bullet. Your answer strengthens the evidence in your cover letter.');
+      DOM.setText('step35Sub', 'One question per bullet. Each answer sharpens your evidence.');
     }
 
     // Step 4 — voice context
     if (!needs.voice) {
-      DOM.setText('step4Sub', "Your selected assets don't need a writing sample — continue when ready.");
+      DOM.setText('step4Sub', "These assets don't need a writing sample.");
     } else if (firstName) {
-      DOM.setText('step4Sub', `Optional — but a writing sample makes ${firstName}'s voice distinct in every asset.`);
+      DOM.setText('step4Sub', `Optional — but a sample makes ${firstName}'s voice specific.`);
     }
 
     // Step 5 — after generation
     if (company && assets.length > 0) {
-      DOM.setText('step5Sub', `${assets.length} asset${assets.length > 1 ? 's' : ''} built from one brief. Specific to ${company}. Each scored, each refinable.`);
+      DOM.setText('step5Sub', `${assets.length} asset${assets.length > 1 ? 's' : ''} built for ${company}.`);
     }
   }
   function collapseStep(stepId, collapsedId) { hide(stepId); show(collapsedId); }
@@ -1178,13 +1178,13 @@ const FLOW = (() => {
 
   // ── Step 0 ─────────────────────────────────────────────────────────────────
   const ASSET_NUDGES = {
-    single_cover:    'We research the company, find the argument, write the letter. Not from a template — from your evidence.',
-    single_bullets:  'We select the bullets most relevant to this role and rewrite each one to prove something specific.',
-    single_interview:'Questions pulled from the JD, answers built from your CV, what each question is really testing.',
-    single_email:    'Three sentences. One specific company observation. One result from your CV. One clear ask.',
-    single_form:     'Every field answered from the brief — your evidence, your voice, the argument we\'ve built.',
-    full_package:    'Every asset built from one brief. The cover letter and bullets tell the same story. The email opens that story. The interview prep defends it.',
-    multiple:        'Each asset needs different information — we\'ll ask for what\'s relevant and skip what\'s not.',
+    single_cover:    'Company research, CV analysis, one argument, one letter. Not a template.',
+    single_bullets:  'The bullets most relevant to this role, rewritten to prove something specific.',
+    single_interview:'Questions from the JD. Answers from your CV. What each question is really testing.',
+    single_email:    'Three sentences. One company observation. One result. One ask.',
+    single_form:     'Every field answered from your brief — evidence, not templates.',
+    full_package:    'One brief. Five assets. All arguing the same thing.',
+    multiple:        'We\'ll ask only for what each asset needs.',
   };
 
   function toggleAssetCard(card) {
