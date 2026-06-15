@@ -9,17 +9,19 @@
 
 /* ── Light mode ─────────────────────────────────────────────────────────────── */
 :root {
-  --bg:          #f5f2eb;
+  /* Background: very slightly warm grey — not cream, not clinical white.
+     High enough contrast against cards. Doesn't fatigue the eyes. */
+  --bg:          #f8f7f5;
   --card:        #ffffff;
-  --card-raised: #ece9e2;
-  --card-inset:  #e4e0d8;
-  --border:      #d8d4cc;
-  --border-mid:  #b8b4aa;
-  --border-str:  #8a8678;
+  --card-raised: #f0efed;
+  --card-inset:  #e8e6e2;
+  --border:      #dbd9d4;
+  --border-mid:  #b8b4ae;
+  --border-str:  #8a8780;
   --text:        #111108;
   --text2:       #2d2a20;
-  --text3:       #605a48;
-  --text4:       #9a9080;
+  --text3:       #5c574a;
+  --text4:       #96907f;
 
   /* Step colours — vivid, full saturation */
   /* S1 Blue */
@@ -230,6 +232,7 @@ body {
 .step {
   background:var(--card); border:0.5px solid var(--border); border-radius:var(--radius);
   padding:28px; margin-bottom:8px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06), 0 1px 8px rgba(0,0,0,.04);
   animation:fadeUp .35s ease forwards; transition:background .3s,border-color .3s;
 }
 /* Active step gets left accent border in the step's identity colour */
@@ -279,8 +282,18 @@ body {
 /* ═══════════════════════════════════════════════════════
    STEP 0 — Parker 3+2 card grid + full package
    ═══════════════════════════════════════════════════════ */
+/* 2-column grid used for all asset rows — consistent on every screen */
+.asset-grid-2col {
+  display:grid; grid-template-columns:repeat(2,1fr); gap:8px;
+  margin-bottom:8px;
+}
+/* Full width — single card row */
+.asset-grid-full {
+  display:grid; grid-template-columns:1fr; gap:8px;
+}
+/* Legacy — keep for any existing references */
 .asset-grid {
-  display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+  display:grid; grid-template-columns:repeat(2,1fr); gap:8px;
   margin-bottom:8px;
 }
 .asset-grid-row2 {
@@ -926,17 +939,16 @@ body {
 @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
 /* ── Step 0 proposition ─────────────────────────────────────────────────────── */
-/* The mechanism sentence — explains what this product actually does before commitment */
+/* Single sharp line. Confident. Not a grey box of documentation. */
 .step-proposition {
-  font-family: var(--font-ui);
-  font-size: 13px;
+  font-family: var(--font-s);    /* Fraunces — same as narrative thread */
+  font-style: italic;
+  font-weight: 300;
+  font-size: 15px;
   color: var(--text3);
-  line-height: 1.7;
-  margin: 10px 0 20px;
-  padding: 12px 16px;
-  background: var(--card-raised);
-  border-left: 3px solid var(--border-mid);
-  border-radius: 0 var(--rsm) var(--rsm) 0;
+  line-height: 1.5;
+  margin: 8px 0 20px;
+  /* No box. No border. Just type. */
 }
 
 /* ── Pain point evidence badges ──────────────────────────────────────────────── */
