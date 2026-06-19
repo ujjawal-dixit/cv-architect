@@ -495,8 +495,59 @@ class FormAnswerRequest(BaseModel):
     form_text: Optional[str] = ""          # pasted form questions (alternative to image)
     writing_sample: Optional[str] = ""
 
+# ── Observability: prompt-length guard + session spend counter ────────────────
+# Additive only. Never changes happy-path output. The guard caps pathological
+# input length; the counter surfaces weighted token spend in logs so cost is
+# visible before any paid model is wired in. The counter is in-memory, global,
+# and logging-only — it does not block requests. Hard per-session enforcement
+# is deferred until a session id is threaded from the frontend.
+MAX_TOKENS_PROMPT = {
+    "parse_cv":            5_000,
+    "research_processing": 3_000,
+    "jd_signals":          4_000,
+    "pain_points":         7_000,
+    "brief":               5_500,
+    "cover_letter":        6_500,
+    "judge":               5_000,
+    "bullets":             6_000,
+    "interview_prep":      6_500,
+    "cold_email":          4_000,
+    "bullet_diagnosis":    6_000,
+    "form_answer":         5_000,
+}
+
+def guard_prompt_length(prompt: str, call_name: str) -> str:
+    """Hard cap on prompt length before an LLM call (~4 chars per token).
+    Truncation is always worth investigating, so it logs when it happens."""
+    max_chars = MAX_TOKENS_PROMPT.get(call_name, 5_000) * 4
+    if len(prompt) > max_chars:
+        print(f"[TOKEN_CAP] {call_name}: prompt ~{len(prompt)//4} tok, capped at {max_chars//4}")
+        return prompt[:max_chars] + "\n\n[Input truncated due to length — continue with available context]"
+    return prompt
+
+_session_tokens = {"global": 0}
+_spend_warned   = {"global": False}
+_pipeline       = {"calls": 0}   # cumulative successful LLM calls; read as a delta per request
+TOKEN_WEIGHTS = {
+    "groq_8b": 1, "groq_70b": 3,
+    "gemini_flash": 2, "gemini_pro": 8,
+    "anthropic_haiku": 4, "anthropic_sonnet": 12,
+}
+SESSION_TOKEN_LIMIT = 500_000  # weighted; logging threshold, not a hard block
+
+def _track_spend(prompt: str, max_tokens: int, model_tier: str, session_id: str = "global"):
+    """Estimate weighted token spend per call; warn once when a session crosses
+    the ceiling. In-memory, resets on container restart."""
+    _pipeline["calls"] += 1
+    est = (len(prompt) // 4) + max_tokens
+    _session_tokens[session_id] = _session_tokens.get(session_id, 0) + est * TOKEN_WEIGHTS.get(model_tier, 1)
+    if _session_tokens[session_id] > SESSION_TOKEN_LIMIT and not _spend_warned.get(session_id):
+        _spend_warned[session_id] = True
+        print(f"[SPEND_CAP] session={session_id} crossed {SESSION_TOKEN_LIMIT:,} weighted tokens "
+              f"(now {_session_tokens[session_id]:,}) — investigate runaway loop")
+
 # ── Core LLM — model routing by task type ─────────────────────────────────────
-def llm(prompt, max_tokens=800, quality="fast", temperature=None, retries=3):
+def llm(prompt, max_tokens=800, quality="fast", temperature=None, retries=3, timeout=45):
     """
     quality="fast"   → Groq 8b  — extraction, classification, structured output
     quality="high"   → Groq 70b — generation, reasoning, nuanced output
@@ -511,7 +562,9 @@ def llm(prompt, max_tokens=800, quality="fast", temperature=None, retries=3):
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
                 temperature=temperature,
+                timeout=timeout,
             )
+            _track_spend(prompt, max_tokens, "groq_70b" if quality == "high" else "groq_8b")
             return res.choices[0].message.content.strip()
         except Exception as e:
             err = str(e)
@@ -522,7 +575,7 @@ def llm(prompt, max_tokens=800, quality="fast", temperature=None, retries=3):
                         m = re.search(r'try again in (\d+\.?\d*)s', err)
                         if m:
                             wait = float(m.group(1)) + 1.0
-                    except:
+                    except (AttributeError, ValueError):
                         pass
                     time.sleep(wait)
                     continue
@@ -530,7 +583,7 @@ def llm(prompt, max_tokens=800, quality="fast", temperature=None, retries=3):
     raise Exception("LLM error: rate limit — wait a moment and try again")
 
 # ── Gemini LLM — generation and adversarial judging ───────────────────────────
-def llm_gemini(prompt, max_tokens=1200, model=None, temperature=0.7):
+def llm_gemini(prompt, max_tokens=1200, model=None, temperature=0.7, timeout=60):
     """
     model=MODEL_GEMINI_FLASH → cover letter generation, bullets, cold email
     model=MODEL_GEMINI_PRO   → adversarial judge (cross-model critique)
@@ -554,7 +607,11 @@ def llm_gemini(prompt, max_tokens=1200, model=None, temperature=0.7):
                     temperature=temperature,
                 )
             )
-            response = gemini_model.generate_content(prompt)
+            response = gemini_model.generate_content(
+                prompt, request_options={"timeout": timeout}
+            )
+            _track_spend(prompt, max_tokens,
+                         "gemini_pro" if target_model == MODEL_GEMINI_PRO else "gemini_flash")
             return response.text.strip()
         except Exception as e:
             err = str(e)
@@ -575,8 +632,13 @@ def llm_gemini(prompt, max_tokens=1200, model=None, temperature=0.7):
 
 # ── Parsing helpers ────────────────────────────────────────────────────────────
 def parse_field(text, field_name):
-    pattern = rf'{re.escape(field_name)}:\s*(.+?)(?=\n[A-Z_]{{3,}}:|$)'
-    match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+    # Field name matched case-insensitively (models vary the casing of labels),
+    # but the terminator stays strictly uppercase. This fixes two latent bugs:
+    # (1) IGNORECASE previously let a lowercase line like "note:" cut a value short;
+    # (2) the old [A-Z_]{3,} terminator could not see a digit-bearing label such as
+    #     "TOP_ACHIEVEMENT_1:", so a preceding field would swallow it.
+    pattern = rf'(?i:{re.escape(field_name)}):\s*(.+?)(?=\n[A-Z][A-Z0-9_]{{2,}}:|\Z)'
+    match = re.search(pattern, text, re.DOTALL)
     return match.group(1).strip() if match else ''
 
 # ── CV parsing — one-time structured extraction, foundation of everything ──────
@@ -710,7 +772,8 @@ def extract_company_name(jd_text, manual_company=''):
             )
             extracted = result.strip()
             return extracted if extracted and extracted.upper() != 'UNKNOWN' else clean
-        except:
+        except Exception as e:
+            print(f"[extract_company_name] manual strip failed: {e}")
             return clean
 
     try:
@@ -721,7 +784,8 @@ def extract_company_name(jd_text, manual_company=''):
             max_tokens=30, quality="fast", temperature=0.1
         )
         return "" if result.strip().upper() == "UNKNOWN" else result.strip()
-    except:
+    except Exception as e:
+        print(f"[extract_company_name] JD extraction failed: {e}")
         return ""
 
 def extract_job_title(jd_text, company_name=''):
@@ -733,7 +797,8 @@ def extract_job_title(jd_text, company_name=''):
             f"Output ONLY the job title. If unclear output: Role\n\nJD:\n{jd_text[:500]}\n\nJob title:",
             max_tokens=20, quality="fast", temperature=0.1
         ).strip() or "Role"
-    except:
+    except Exception as e:
+        print(f"[extract_job_title] failed: {e}")
         return "Role"
 
 def check_jd_thinness(jd_text):
@@ -766,7 +831,8 @@ def extract_style_fingerprint(sample_text):
             f"One line each. Based only on what is in the sample.",
             max_tokens=300, quality="fast"
         )
-    except:
+    except Exception as e:
+        print(f"[extract_style_fingerprint] failed: {e}")
         return ""
 
 def build_voice_instruction(writing_sample="", cv_register="standard"):
@@ -819,6 +885,72 @@ def build_voice_instruction(writing_sample="", cv_register="standard"):
     else:
         return "CANDIDATE VOICE — no writing sample or CV register signal. Apply default human register."
 
+def process_all_research(company, job_title, s1, s2a, s2b, s3, s4):
+    """
+    Process all five Tavily search streams in ONE structured call instead of five.
+    Same five output fields as before; four fewer LLM round-trips and four fewer
+    copies of LEVEL_1. Each section keeps its original extraction standard — the
+    consolidation is for latency, not a thinner prompt.
+
+    quality stays 'fast' (8b), matching the original per-section calls. If research
+    depth ever thins under the combined load, the single lever is quality='high'.
+    """
+    out = {'strategic': '', 'culture': '', 'role': '', 'industry': '', 'company_hook': ''}
+    if not any([s1, s2a, s2b, s3, s4]):
+        return out
+
+    prompt = guard_prompt_length(f"""{LEVEL_1}
+
+YOUR TASK:
+Process raw company research for someone applying to {job_title} at {company}.
+Five independent search streams follow. Extract each into its own labelled section.
+Treat each on its own evidence — do not let one stream bleed into another.
+Where a stream is empty or irrelevant, output NONE_FOUND for that section only.
+
+STRATEGIC STREAM (recent news, funding, direction):
+{s1[:1800] if s1 else 'NO_DATA'}
+
+CULTURE STREAM (employee experience, values in practice, interview signals):
+{s2a[:1400] if s2a else 'NO_DATA'}
+{s2b[:1200] if s2b else ''}
+
+ROLE STREAM (what this job actually involves day to day):
+{s3[:1800] if s3 else 'NO_DATA'}
+
+INDUSTRY STREAM (competitive and market context):
+{s4[:1300] if s4 else 'NO_DATA'}
+
+EXTRACTION STANDARD PER SECTION:
+- STRATEGIC: what changed in ~12 months that makes this hire urgent; the direction and
+  pressures the company is publicly navigating. 3-4 sentences, specific to this moment.
+- CULTURE: what the company values in practice (not the careers page), what successful
+  people there share, pace and expectations, and any consistent interview signals.
+  4-5 sentences, honest. Note source type (Glassdoor, Reddit) where visible.
+- ROLE_REALITY: core weekly outputs, skills used in practice, who the role works with,
+  and what separates exceptional from competent here. 4-5 sentences, concrete.
+- INDUSTRY: the biggest pressures or opportunities in this space and where {company}
+  sits against competitors. 3 sentences. Skip anything generic about the industry.
+- COMPANY_HOOK: ONE specific, non-obvious observation a serious candidate would find
+  genuinely interesting — a real product direction, decision, or challenge. One sentence.
+
+Output EXACTLY these labels, nothing before or after:
+STRATEGIC: [extract or NONE_FOUND]
+CULTURE: [extract or NONE_FOUND]
+ROLE_REALITY: [extract or NONE_FOUND]
+INDUSTRY: [extract or NONE_FOUND]
+COMPANY_HOOK: [one sentence or NONE]""", "research_processing")
+
+    try:
+        raw = llm(prompt, max_tokens=900, quality="fast")
+        out['strategic']    = parse_field(raw, 'STRATEGIC')
+        out['culture']      = parse_field(raw, 'CULTURE')
+        out['role']         = parse_field(raw, 'ROLE_REALITY')
+        out['industry']     = parse_field(raw, 'INDUSTRY')
+        out['company_hook'] = parse_field(raw, 'COMPANY_HOOK')
+    except Exception as e:
+        print(f"[research] consolidated processing failed: {e}")
+    return out
+
 # ── Four-search Tavily — deep company research ─────────────────────────────────
 def run_company_research(company, job_title, jd_text):
     """
@@ -841,7 +973,8 @@ def run_company_research(company, job_title, jd_text):
                 params["days"] = days
             r = tavily_client.search(**params)
             return "\n".join([x["content"][:500] for x in r.get("results", [])])
-        except:
+        except Exception as e:
+            print(f"[tavily] search failed ({query[:40]}...): {e}")
             return ""
 
     # Run all four searches in parallel using threads
@@ -860,7 +993,8 @@ def run_company_research(company, job_title, jd_text):
             key = futures[future]
             try:
                 search_results[key] = future.result()
-            except:
+            except Exception as e:
+                print(f"[tavily] {key} future failed: {e}")
                 search_results[key] = ""
 
     s1  = search_results.get('s1', '')
@@ -869,158 +1003,18 @@ def run_company_research(company, job_title, jd_text):
     s3  = search_results.get('s3', '')
     s4  = search_results.get('s4', '')
 
-    # Process Search 1 — Strategic context
-    if s1:
-        try:
-            results['strategic'] = llm(
-                f"""{LEVEL_1}
+    # Process all five search streams in one structured call (was five 8b calls,
+    # five LEVEL_1 copies, five round-trips). Same fields, ~3-5s faster.
+    processed = process_all_research(company, job_title, s1, s2a, s2b, s3, s4)
+    results['strategic']    = processed['strategic']
+    results['culture']      = processed['culture']
+    results['role']         = processed['role']
+    results['industry']     = processed['industry']
+    results['company_hook'] = processed['company_hook']
 
-YOUR TASK:
-Extract what is strategically relevant to someone applying for
-{job_title} at {company} right now.
-
-PRIMARY INPUT — weight this most heavily:
-Recent news and announcements about {company}.
-
-Focus only on:
-- What has changed in the last 12 months that makes this hire urgent
-- Direction the company is moving — new markets, products, priorities
-- Any pressure or challenge the company is publicly navigating
-- What stage the company is at and what problems come with that stage
-
-Do not summarise generally. Extract only what is relevant to this
-specific moment in the company's life and this specific hire.
-3-4 sentences. Factual. If results contain nothing relevant, say so.
-
-SEARCH RESULTS:
-{s1[:2000]}
-
-[If empty: output NONE_FOUND]""",
-                max_tokens=200, quality="fast"
-            )
-        except:
-            pass
-
-    # Process Search 2 — Culture and interview process
-    if s2a or s2b:
-        try:
-            results['culture'] = llm(
-                f"""{LEVEL_1}
-
-YOUR TASK:
-Extract what is genuinely useful for a candidate to know about
-working at {company} and their interview process for {job_title}.
-
-This is not about selling the company — it is about giving the
-candidate an honest, specific picture.
-
-PRIMARY INPUT — weight culture reality most heavily:
-What employees actually say, not what the careers page says.
-
-Extract:
-- What the company actually values in practice
-- What successful people at this company tend to have in common
-- Any cultural realities worth knowing — pace, expectations, what gets rewarded
-- Interview process specifics for this role type if found
-- Any consistent interview questions that appear across multiple accounts
-
-4-5 sentences. Honest. If reviews are thin, note the limitation.
-Cite source type where possible (Glassdoor, Reddit, etc.)
-
-CULTURE RESULTS:
-{s2a[:1500]}
-
-INTERVIEW PROCESS RESULTS:
-{s2b[:1500]}
-
-[If empty: output NONE_FOUND]""",
-                max_tokens=250, quality="fast"
-            )
-        except:
-            pass
-
-        # Extract interview process specifically for interview prep asset
-        if s2b:
-            results['interview_process'] = s2b[:1000]
-
-    # Process Search 3 — Role reality
-    if s3:
-        try:
-            results['role'] = llm(
-                f"""{LEVEL_1}
-
-YOUR TASK:
-Build a picture of what {job_title} at {company} actually involves
-day to day — not what the JD says, but what people doing this work
-at this company actually spend their time on.
-
-PRIMARY INPUT — weight this most heavily:
-LinkedIn profiles of people in similar roles, Glassdoor role descriptions,
-company blog posts about the team.
-
-Extract:
-- Core outputs of this role week to week
-- Technical or functional skills used most in practice
-- Who this role works with — cross-functional context where visible
-- What makes someone exceptional vs competent in this role here
-- Specific projects, products, or initiatives this role likely touches
-
-4-5 sentences. Concrete. If role-specific information is thin,
-extract closest available and note the gap.
-
-SEARCH RESULTS:
-{s3[:2000]}
-
-[If empty: output NONE_FOUND]""",
-                max_tokens=200, quality="fast"
-            )
-        except:
-            pass
-
-    # Process Search 4 — Industry pressure
-    if s4:
-        try:
-            results['industry'] = llm(
-                f"""{LEVEL_1}
-
-YOUR TASK:
-Extract market and competitive context most relevant to someone
-in {job_title} at {company}.
-
-PRIMARY INPUT — industry and competitive landscape.
-
-Extract:
-- Biggest pressures or opportunities in this space right now
-- Where {company} sits relative to competitors
-- Macro forces shaping this industry that {company} cannot ignore
-- Any specific competitive dynamics relevant to this hire
-
-3 sentences maximum. Strategic context only.
-Skip anything generic about the industry.
-
-SEARCH RESULTS:
-{s4[:1500]}
-
-[If empty: output NONE_FOUND]""",
-                max_tokens=150, quality="fast"
-            )
-        except:
-            pass
-
-    # Derive company hook — most specific single observation for P3 and cold email
-    all_context = f"{results['strategic']} {results['role']}".strip()
-    if all_context and 'NONE_FOUND' not in all_context:
-        try:
-            results['company_hook'] = llm(
-                f"From this company research, extract ONE specific, non-obvious observation about "
-                f"{company} that a serious candidate would find genuinely interesting — "
-                f"not a generic mission statement, a specific product direction, challenge, or decision.\n"
-                f"One sentence only. If nothing specific found, output NONE.\n\n"
-                f"Research:\n{all_context[:1000]}",
-                max_tokens=80, quality="fast"
-            )
-        except:
-            pass
+    # Interview prep mines the raw interview research directly — unchanged contract
+    if s2b:
+        results['interview_process'] = s2b[:1000]
 
     return results
 
@@ -2082,6 +2076,7 @@ def generate_cover_letter(brief, voice_instruction, routing_choices=None, applic
     ctx = application_context or {}
 
     prompt = build_cover_letter_prompt(brief, voice_instruction, rc, ctx)
+    prompt = guard_prompt_length(prompt, "cover_letter")
 
     # ── Generation: Gemini 2.5 Flash ──────────────────────────────────────────
     # Flash generates the letter with six-slot scratchpad.
@@ -2125,6 +2120,7 @@ def generate_cover_letter(brief, voice_instruction, routing_choices=None, applic
     judge_signal  = ""
     judge_revision_instruction = ""
     judge_ran_successfully = False
+    judge_model_used = "none"
 
     company   = brief.get('company', 'this company')
     job_title = brief.get('job_title', 'this role')
@@ -2252,6 +2248,8 @@ REVISION_INSTRUCTION: [If REVISE: one surgical instruction — which paragraph, 
 
 REJECTION_SIGNAL: [If REJECT: (1) the exact fabrication or failure, (2) brief evidence that was available but unused, (3) the argument the letter should have made. If PASS or REVISE: NONE]"""
 
+    judge_prompt = guard_prompt_length(judge_prompt, "judge")
+
     try:
         # Try Pro first for best judgment quality
         judge_raw = llm_gemini(
@@ -2261,6 +2259,7 @@ REJECTION_SIGNAL: [If REJECT: (1) the exact fabrication or failure, (2) brief ev
             temperature=0.1  # Very low — judge must be deterministic and precise
         )
         judge_ran_successfully = True
+        judge_model_used = "gemini_pro"
     except Exception as judge_err:
         print(f"Judge Pro failed, trying Flash: {judge_err}")
         try:
@@ -2272,12 +2271,14 @@ REJECTION_SIGNAL: [If REJECT: (1) the exact fabrication or failure, (2) brief ev
                 temperature=0.1
             )
             judge_ran_successfully = True
+            judge_model_used = "gemini_flash"
         except Exception as flash_err:
             print(f"Judge Flash also failed: {flash_err}")
             # Final fallback — Groq 70b
             try:
                 judge_raw = llm(judge_prompt, max_tokens=700, quality="high", temperature=0.1)
                 judge_ran_successfully = True
+                judge_model_used = "groq_70b"
             except Exception as groq_err:
                 print(f"Judge Groq also failed: {groq_err}")
                 judge_ran_successfully = False
@@ -2308,6 +2309,11 @@ REJECTION_SIGNAL: [If REJECT: (1) the exact fabrication or failure, (2) brief ev
             judge_signal = revision_match.group(1).strip()
         if rejection_match:
             judge_revision_instruction = rejection_match.group(1).strip()
+
+        # Observability — log the judge outcome on every run (Phase 1.1 gate)
+        print(f"[JUDGE] ran_successfully=True | verdict={judge_verdict} | model={judge_model_used}")
+        if judge_verdict == "REJECT":
+            print(f"[JUDGE] REJECT signal: {judge_revision_instruction[:200]}")
 
         # ── Act on verdict ───────────────────────────────────────────────────
         if judge_verdict == "REVISE" and judge_signal and judge_signal.upper() not in ('NONE', 'NONE.'):
@@ -2385,6 +2391,9 @@ Output ONLY the cover letter. Four paragraphs. No preamble."""
             except Exception as regen_err:
                 print(f"Regeneration failed (non-fatal): {regen_err}")
 
+    else:
+        # Judge produced nothing across all three tiers — letter ships unevaluated.
+        print("[JUDGE] ran_successfully=False — all tiers failed, letter delivered without evaluation")
 
         # ── Build letter_brief — decision record for refinement ───────────────────
     opening_labels = {
@@ -3182,9 +3191,13 @@ async def api_generate(req: GenerateRequest):
         brief['referral_name'] = application_context.get('referral_name', '')
 
         results       = {}
-        evals         = {}
+        evals         = {}   # specificity/alignment evals removed from the generation
+                             # pipeline; the judge's own scoring covers the cover letter.
+                             # Kept as an empty dict so the response contract is unchanged.
         letter_briefs = {}
         loop          = asyncio.get_event_loop()
+        _calls_start  = _pipeline["calls"]
+        _tokens_start = _session_tokens["global"]
 
         # ── Cover letter generates first — synchronously ───────────────────────
         # It must finish before the judge can run.
@@ -3200,17 +3213,8 @@ async def api_generate(req: GenerateRequest):
             results['cover_letter']       = cover_letter_text
             letter_briefs['cover_letter'] = cover_letter_lb
 
-        # ── All remaining tasks run concurrently ───────────────────────────────
+        # ── Remaining assets run concurrently ──────────────────────────────────
         # The adversarial judge already ran inside generate_cover_letter().
-        # Evals for the cover letter and generation of other assets run in parallel.
-        async def run_cover_evals():
-            if cover_letter_text:
-                return {
-                    **await loop.run_in_executor(None, lambda: run_specificity_eval(cover_letter_text, 'cover letter')),
-                    **await loop.run_in_executor(None, lambda: run_alignment_eval(cover_letter_text, brief, 'cover_letter'))
-                }
-            return {}
-
         async def run_bullets():
             if 'Resume Bullets' in req.selected_assets:
                 return await loop.run_in_executor(None, lambda: generate_bullets(brief))
@@ -3218,47 +3222,31 @@ async def api_generate(req: GenerateRequest):
 
         async def run_email():
             if 'Cold Outreach Email' in req.selected_assets:
-                text = await loop.run_in_executor(None, lambda: generate_cold_email(brief, voice_instruction))
-                email_evals = {
-                    **await loop.run_in_executor(None, lambda: run_specificity_eval(text, 'cold outreach email')),
-                    **await loop.run_in_executor(None, lambda: run_alignment_eval(text, brief, 'email'))
-                }
-                return text, email_evals
-            return None, {}
+                return await loop.run_in_executor(None, lambda: generate_cold_email(brief, voice_instruction))
+            return None
 
         async def run_interview():
             if 'Interview Prep' in req.selected_assets:
-                text = await loop.run_in_executor(None, lambda: generate_interview_prep(brief))
-                interview_evals = {
-                    **await loop.run_in_executor(None, lambda: run_specificity_eval(text, 'interview prep')),
-                    **await loop.run_in_executor(None, lambda: run_alignment_eval(text, brief, 'interview_prep'))
-                }
-                return text, interview_evals
-            return None, {}
+                return await loop.run_in_executor(None, lambda: generate_interview_prep(brief))
+            return None
 
-        # Run everything concurrently
-        cover_evals_result, bullets_result, email_result, interview_result = await asyncio.gather(
-            run_cover_evals(),
+        bullets_result, email_result, interview_result = await asyncio.gather(
             run_bullets(),
             run_email(),
             run_interview(),
         )
 
-        if cover_evals_result:
-            evals['cover_letter'] = cover_evals_result
-
         if bullets_result is not None:
             results['resume_bullets'] = bullets_result
+        if email_result is not None:
+            results['email'] = email_result
+        if interview_result is not None:
+            results['interview_prep'] = interview_result
 
-        email_text, email_evals = email_result
-        if email_text is not None:
-            results['email'] = email_text
-            evals['email']   = email_evals
-
-        interview_text, interview_evals = interview_result
-        if interview_text is not None:
-            results['interview_prep'] = interview_text
-            evals['interview_prep']   = interview_evals
+        # Observability — calls and weighted tokens for this generation run (Phase 3.4)
+        print(f"[PIPELINE] generate: {_pipeline['calls'] - _calls_start} calls | "
+              f"~{_session_tokens['global'] - _tokens_start:,} weighted tokens | "
+              f"assets={req.selected_assets}")
 
         return {"results": results, "evals": evals, "letter_briefs": letter_briefs}
     except Exception as e:
